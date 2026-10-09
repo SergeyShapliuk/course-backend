@@ -21,11 +21,11 @@
 
 ## Состав уроков
 
-**11.1 Стратегия тестирования.** Пирамида против testing trophy · unit, integration, E2E: что каждый уровень доказывает и сколько стоит · test doubles: dummy, stub, spy, mock, fake · тестирование в NestJS: `Test.createTestingModule`, `overrideProvider` · Testcontainers против in-memory баз · тестирование гонок и отказов: конкурентные запросы, падение зависимости, таймауты.
+**11.1 Стратегия тестирования.** Пирамида против testing trophy · unit, integration, E2E: что каждый уровень доказывает и сколько стоит · test doubles: dummy, stub, spy, mock, fake · тестирование в NestJS: `Test.createTestingModule`, `overrideProvider` · Testcontainers против in-memory баз · тестирование гонок и отказов: конкурентные запросы, падение зависимости, таймауты · тестирование транзакций (изоляция тестов, откат, уровни изоляции) и повторной доставки сообщений (идемпотентность консьюмера).
 
 **11.2 Contract testing и качество тестов.** Consumer-driven contracts, Pact · OpenAPI как контракт · flaky tests: причины и борьба с ними · тестовые данные и изоляция · мутационное тестирование · coverage как метрика и её ограничения.
 
-**11.3 Docker и CI/CD.** Слои образа и кеш · multi-stage builds · выбор базового образа: alpine (musl) против slim против distroless · Node.js в контейнере: PID 1 и сигналы, лимиты памяти и CPU · rolling, blue-green, canary · миграции базы в пайплайне и обратная совместимость · feature flags.
+**11.3 Docker и CI/CD.** Слои образа и кеш · multi-stage builds · выбор базового образа: alpine (musl) против slim против distroless · Node.js в контейнере: PID 1 и сигналы, лимиты памяти и CPU · конфигурация и секреты между окружениями (12-factor) · rolling, blue-green, canary · миграции базы в пайплайне и обратная совместимость · feature flags.
 
 **11.4 Observability.** Структурные логи (pino), уровни, correlation ID · метрики: RED и USE, типы Prometheus (counter, gauge, histogram, summary), cardinality · distributed tracing: spans, context propagation, W3C `traceparent` · OpenTelemetry: SDK, auto-instrumentation, collector, sampling.
 

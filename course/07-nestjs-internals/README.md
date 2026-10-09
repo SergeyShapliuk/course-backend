@@ -24,13 +24,13 @@
 
 **7.1 IoC, DI и модули.** Inversion of Control и Dependency Injection · `reflect-metadata` и `design:paramtypes` из `emitDecoratorMetadata` · как injector разрешает токены и строит граф · модули как граница инкапсуляции: `providers`, `exports`, `imports` · почему интерфейс не может быть токеном.
 
-**7.2 Providers и dynamic modules.** `useClass`, `useValue`, `useFactory`, `useExisting` · строковые и symbol-токены, `@Inject` · `@Optional` · global modules и почему ими не злоупотребляют · dynamic modules: `forRoot`, `forRootAsync`, `forFeature`, `ConfigurableModuleBuilder`.
+**7.2 Providers и dynamic modules.** `useClass`, `useValue`, `useFactory`, `useExisting` · строковые и symbol-токены, `@Inject` · `@Optional` · global modules и почему ими не злоупотребляют · dynamic modules: `forRoot`, `forRootAsync`, `forFeature`, `ConfigurableModuleBuilder` · конфигурация приложения: `ConfigModule`, валидация переменных окружения при старте (fail fast), типизированный конфиг.
 
 **7.3 Scopes.** DEFAULT, REQUEST, TRANSIENT · всплытие scope вверх по цепочке зависимостей · цена request scope для производительности · durable providers и multi-tenancy · альтернатива: request context через AsyncLocalStorage (`nestjs-cls` и аналоги).
 
 **7.4 Request lifecycle.** Полный порядок: middleware → guards → interceptors (до) → pipes → handler → interceptors (после) → exception filters · порядок global, controller и method уровней · до- и после-части interceptor вокруг `next.handle()` · на каком этапе возникло исключение и какой filter его поймает · где какой enhancer уместен · отличия Express и Fastify (middleware, request/response объекты).
 
-**7.5 Enhancers и metadata.** Guards и `ExecutionContext` (HTTP, RPC, WebSocket) · interceptors: трансформация ответа, таймауты, кеш · pipes: валидация и трансформация, `ValidationPipe` · exception filters · `Reflector`, `SetMetadata`, `Reflector.createDecorator`, `applyDecorators`, кастомные param decorators.
+**7.5 Enhancers и metadata.** Guards и `ExecutionContext` (HTTP, RPC, WebSocket) · interceptors: трансформация ответа, таймауты, кеш · pipes: валидация и трансформация, `ValidationPipe` · exception filters и стратегия ошибок: доменные исключения отдельно от HTTP, преобразование в единый формат ответа (Problem Details) на границе · `Reflector`, `SetMetadata`, `Reflector.createDecorator`, `applyDecorators`, кастомные param decorators.
 
 **7.6 Lifecycle, циклические зависимости, платформы.** `onModuleInit`, `onApplicationBootstrap`, `onModuleDestroy`, `beforeApplicationShutdown`, `onApplicationShutdown` · `enableShutdownHooks` · циклические зависимости модулей и провайдеров, `forwardRef`, `ModuleRef`, почему цикл — симптом проблемы дизайна · lazy-loading модулей · Express против Fastify adapter.
 
