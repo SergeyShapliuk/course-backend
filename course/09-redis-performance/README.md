@@ -1,0 +1,45 @@
+# 09 — Redis и performance
+
+**Prerequisites блока:** [03 — Node.js Internals](../03-nodejs-internals/), [05 — PostgreSQL](../05-postgresql/)
+**Следующий блок:** [10 — Queues и distributed systems](../10-queues-distributed/)
+**Уроков:** 5 — 1 🟢 · 2 🟡 · 2 🔴
+
+## Цель блока
+
+Понимать Redis как однопоточный in-memory сервер со своими гарантиями, а не как «быстрый кеш». Уметь спроектировать кеширование с явной стратегией инвалидации и защитой от stampede. Отдельный урок про performance engineering: как измерять, где искать узкое место и как масштабироваться.
+
+Лицензия Redis и форк Valkey менялись в последние годы; актуальный статус сверяется на момент написания урока.
+
+## Уроки
+
+| # | Тема | Уровень | Ключевой вопрос урока | Текст |
+|---|---|---|---|---|
+| 9.1 | Архитектура и структуры данных Redis | 🟢 | почему однопоточный Redis быстрый и какая команда его остановит | — |
+| 9.2 | Persistence, репликация, Cluster, eviction | 🟡 | что Redis потеряет при падении и что вытеснит при нехватке памяти | — |
+| 9.3 | Паттерны кеширования | 🟡 | как кешировать и как поддерживать кеш согласованным с базой | — |
+| 9.4 | Отказы кеша и атомарность | 🔴 | что происходит, когда истекает популярный ключ | — |
+| 9.5 | Performance engineering | 🔴 | как доказать, где узкое место, и что даст масштабирование | — |
+
+## Состав уроков
+
+**9.1 Архитектура и структуры данных Redis.** Однопоточное выполнение команд и I/O threads · String, Hash, List, Set, Sorted Set, Stream, Bitmap, HyperLogLog · внутренние encodings (listpack, skiplist, intset) · сложность операций, опасные команды (`KEYS`, большие `HGETALL`, `DEL` больших ключей против `UNLINK`) · pipelining.
+
+**9.2 Persistence, репликация, Cluster, eviction.** RDB и AOF, политики `appendfsync`, что теряется при сбое · асинхронная репликация и `WAIT` · Sentinel · Cluster: hash slots, hash tags, мультиключевые операции · `maxmemory` и политики eviction · как работает истечение ключей.
+
+**9.3 Паттерны кеширования.** Cache-aside, read-through, write-through, write-behind · выбор TTL · инвалидация: по событию, по версии, по TTL · гонки между записью в базу и инвалидацией кеша · многоуровневый кеш (in-process + Redis) · что не стоит кешировать.
+
+**9.4 Отказы кеша и атомарность.** Cache stampede: блокировка, probabilistic early expiration, request coalescing · hot keys и big keys · cache penetration и Bloom filter · cache avalanche и jitter TTL · `MULTI` / `EXEC` / `WATCH` · Lua-скрипты и functions.
+
+**9.5 Performance engineering.** Latency против throughput · перцентили и почему среднее врёт · закон Литтла и закон Амдала · профилирование Node.js: CPU profile, flamegraphs, clinic.js · нагрузочное тестирование (k6, autocannon) и coordinated omission · вертикальное против горизонтального масштабирования, stateless-сервисы.
+
+## Что должно быть получено
+
+- Проектирую кеш для конкретного endpoint'а: стратегия, TTL, инвалидация, защита от stampede.
+- Объясняю, что потеряет Redis при падении с конкретной конфигурацией persistence.
+- По метрикам latency и throughput определяю, где узкое место, и обосновываю следующий шаг.
+
+## Связи с другими блоками
+
+- **03 Node.js:** event loop lag, профилирование, память (3.2, 3.5).
+- **08 Security:** распределённый rate limiting (8.6).
+- **10 Queues:** BullMQ поверх Redis (10.2), распределённые блокировки (10.6).

@@ -1,0 +1,46 @@
+# 10 — Queues и distributed systems
+
+**Prerequisites блока:** [05 — PostgreSQL](../05-postgresql/) (транзакции), [09 — Redis и performance](../09-redis-performance/)
+**Следующий блок:** [11 — Testing и production](../11-testing-production/)
+**Уроков:** 6 — 1 🟢 · 2 🟡 · 3 🔴
+
+## Цель блока
+
+Проектировать асинхронное взаимодействие с явными гарантиями доставки. Понимать, почему exactly-once почти всегда означает at-least-once плюс идемпотентность, как не потерять событие между базой и брокером и как откатывать бизнес-процесс, который растянут на несколько сервисов.
+
+## Уроки
+
+| # | Тема | Уровень | Ключевой вопрос урока | Текст |
+|---|---|---|---|---|
+| 10.1 | Основы messaging | 🟢 | чем очередь отличается от лога и что значит «доставлено» | — |
+| 10.2 | BullMQ | 🟡 | как устроена очередь поверх Redis и что происходит с упавшей задачей | — |
+| 10.3 | RabbitMQ | 🟡 | как сообщение попадает в нужную очередь и когда оно удаляется | — |
+| 10.4 | Kafka | 🔴 | как Kafka гарантирует порядок и что происходит при rebalance | — |
+| 10.5 | Надёжная доставка | 🔴 | как не потерять и не обработать дважды | — |
+| 10.6 | Распределённые транзакции и блокировки | 🔴 | как откатить процесс, который прошёл через три сервиса | — |
+
+## Состав уроков
+
+**10.1 Основы messaging.** Point-to-point, pub/sub, log · push против pull · порядок сообщений и партиционирование · at-most-once, at-least-once, effectively-once · ack и visibility timeout · синхронное против асинхронного взаимодействия.
+
+**10.2 BullMQ.** Как BullMQ хранит задачи в Redis (lists, sorted sets, Lua) · жизненный цикл job: waiting, active, delayed, completed, failed · retries и backoff · stalled jobs и lock duration · concurrency и rate limiting · flows (parent/child) · интеграция с NestJS.
+
+**10.3 RabbitMQ.** Модель AMQP 0-9-1: exchange, queue, binding · типы exchange: direct, topic, fanout, headers · ack, nack, requeue · prefetch и справедливое распределение · dead letter exchange · classic против quorum queues, streams · publisher confirms.
+
+**10.4 Kafka.** Topics, partitions, offsets · consumer groups и rebalancing (eager против cooperative) · репликация: leader, ISR, `acks`, `min.insync.replicas` · idempotent producer, transactions, exactly-once semantics и их границы · retention и compaction · KRaft вместо ZooKeeper.
+
+**10.5 Надёжная доставка.** Retries с exponential backoff и jitter · DLQ и poison messages · idempotent consumer и inbox-таблица · Transactional Outbox: проблема dual write и её решение · CDC (Debezium) как альтернатива polling · порядок обработки и повторная доставка.
+
+**10.6 Распределённые транзакции и блокировки.** 2PC и почему его избегают · Saga: choreography против orchestration, компенсирующие действия · eventual consistency и как её объяснить продукту · distributed locks: `SET NX PX`, Redlock и его критика, fencing tokens · leader election.
+
+## Что должно быть получено
+
+- Проектирую публикацию события после записи в базу без потери и без дублей.
+- Выбираю между BullMQ, RabbitMQ и Kafka для конкретной задачи и защищаю выбор.
+- Проектирую сагу оформления заказа с компенсациями и объясняю, что увидит пользователь в каждом промежуточном состоянии.
+
+## Связи с другими блоками
+
+- **04 HTTP:** идемпотентность API (4.4).
+- **05 PostgreSQL:** транзакции и `SKIP LOCKED` (5.5, 5.6).
+- **12 System Design:** микросервисы, согласованность, race conditions (12.4, 12.5, 12.7).

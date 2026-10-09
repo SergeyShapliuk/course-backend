@@ -1,0 +1,46 @@
+# 04 — HTTP, сети и API design
+
+**Prerequisites блока:** [03 — Node.js Internals](../03-nodejs-internals/) (event loop, жизненный цикл процесса)
+**Следующий блок:** [05 — PostgreSQL](../05-postgresql/)
+**Уроков:** 6 — 3 🟢 · 2 🟡 · 1 🔴
+
+## Цель блока
+
+Понимать путь запроса от DNS до ответа: соединение, шифрование, протокол, семантика HTTP, проектирование API. Уметь объяснить, почему retry безопасен для одного запроса и опасен для другого, и откуда берутся 502 и 504 между балансировщиком и Node.js.
+
+## Уроки
+
+| # | Тема | Уровень | Ключевой вопрос урока | Текст |
+|---|---|---|---|---|
+| 4.1 | TCP, DNS, TLS | 🟢 | что происходит до того, как сервер увидит первый байт запроса | — |
+| 4.2 | Версии HTTP и семантика | 🟢 | что решает каждая версия HTTP и какие проблемы она оставляет | — |
+| 4.3 | REST и API design | 🟢 | как спроектировать API, которое переживёт несколько версий клиентов | — |
+| 4.4 | Idempotency в API | 🟡 | как сделать повтор запроса безопасным | — |
+| 4.5 | HTTP caching и CORS | 🟡 | кто и что кеширует и кого на самом деле защищает CORS | — |
+| 4.6 | Real-time, таймауты, балансировщики | 🔴 | откуда берутся 502/504 и как выбрать между WebSocket и SSE | — |
+
+## Состав уроков
+
+**4.1 TCP, DNS, TLS.** Трёхстороннее рукопожатие, keep-alive, алгоритм Нейгла, TIME_WAIT и исчерпание портов · DNS: резолвинг, TTL, `dns.lookup` против `dns.resolve` в Node.js · TLS 1.2 против TLS 1.3 (число round-trip, 0-RTT и replay) · SNI, сертификаты, mTLS.
+
+**4.2 Версии HTTP и семантика.** HTTP/1.1: persistent connections, pipelining и почему его не используют · HTTP/2: бинарные фреймы, multiplexing, HPACK, head-of-line blocking на уровне TCP · HTTP/3 и QUIC · методы, коды ответов (401 против 403, 409 против 422), важные заголовки.
+
+**4.3 REST и API design.** Ресурсы и операции, safe и idempotent методы по RFC 9110 · пагинация offset против cursor (keyset) · фильтрация и сортировка · версионирование (URL, header, media type) · формат ошибок: Problem Details (RFC 9457) · REST против GraphQL против gRPC.
+
+**4.4 Idempotency в API.** Почему POST не идемпотентен и как это исправить: `Idempotency-Key`, хранение результата, гонка двух одинаковых запросов · optimistic concurrency через `ETag` и `If-Match` · безопасные retries на клиенте и на прокси.
+
+**4.5 HTTP caching и CORS.** `Cache-Control` (`max-age`, `no-cache` против `no-store`, `private`, `s-maxage`, `stale-while-revalidate`) · ETag и `304 Not Modified` · `Vary` · CDN и reverse proxy · CORS: simple requests, preflight, `credentials`, почему CORS защищает пользователя браузера, а не сервер.
+
+**4.6 Real-time, таймауты, балансировщики.** WebSocket, SSE, long polling: сравнение и масштабирование · таймауты: connect, read, idle, общий deadline · таймауты HTTP-сервера Node.js (`headersTimeout`, `requestTimeout`, `keepAliveTimeout`) и их согласование с балансировщиком · L4 против L7 балансировки · reverse proxy, `X-Forwarded-*`.
+
+## Что должно быть получено
+
+- Объясняю, какие запросы можно повторять автоматически, и проектирую идемпотентный POST для платежа.
+- Нахожу причину периодических 502 за балансировщиком по описанию симптомов.
+- Защищаю выбор между REST, GraphQL и gRPC, а также между WebSocket и SSE через trade-offs.
+
+## Связи с другими блоками
+
+- **03 Node.js:** HTTP-сервер работает в event loop (3.2), graceful shutdown закрывает keep-alive соединения (3.7).
+- **08 Security:** cookies, CORS и CSRF (8.1, 8.5), TLS.
+- **10 Distributed:** идемпотентность API (4.4) продолжается идемпотентными консьюмерами (10.5).
