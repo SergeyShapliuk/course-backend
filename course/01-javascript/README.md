@@ -14,7 +14,7 @@
 
 | # | Тема | Уровень | Ключевой вопрос урока | Текст |
 |---|---|---|---|---|
-| 1.1 | Execution context, scope, hoisting, TDZ, `this` | 🟢 | откуда функция берёт каждое имя и чему равен `this` в этом вызове | — |
+| 1.1 | Execution context, scope, hoisting, TDZ, `this` | 🟢 | откуда функция берёт каждое имя и чему равен `this` в этом вызове | [01-execution-context-scope-this](./01-execution-context-scope-this/) |
 | 1.2 | Closures | 🟢 | что именно удерживает замыкание и почему это приводит к утечкам | — |
 | 1.3 | Прототипы и классы | 🟡 | что происходит при `new` и `obj.method()` на уровне `[[Prototype]]` | — |
 | 1.4 | Promises и async/await | 🟡 | как Promise разрешается, что делает `await` и куда пропадают ошибки | — |
@@ -23,7 +23,7 @@
 
 ## Состав уроков
 
-**1.1 Execution context, scope, hoisting, TDZ, `this`.** Execution context и call stack · Environment Records и scope chain · фаза инстанцирования и hoisting · TDZ · блочный scope и per-iteration binding · глобальный scope в script, CommonJS и ESM · четыре правила `this` и их приоритет · стрелочные функции · как V8 реализует окружения.
+**1.1 Execution context, scope, hoisting, TDZ, `this`.** Execution context и call stack · Environment Records и scope chain · фаза инстанцирования и hoisting · TDZ · блочный scope и per-iteration binding · глобальный scope в script, CommonJS и ESM · четыре правила `this` и их приоритет · стрелочные функции · потеря `this` в callback · граница «спецификация против реализации» (детали V8 Context — в 1.2).
 
 **1.2 Closures.** `[[Environment]]` у функции · что реально удерживается (V8 Context, общий для замыканий одного scope) · утечки через замыкания в обработчиках, таймерах и кешах · module pattern и приватное состояние · замыкания против классов.
 
