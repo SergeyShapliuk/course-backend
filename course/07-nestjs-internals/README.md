@@ -28,13 +28,21 @@
 
 **7.3 Scopes.** DEFAULT, REQUEST, TRANSIENT · всплытие scope вверх по цепочке зависимостей · цена request scope для производительности · durable providers и multi-tenancy · альтернатива: request context через AsyncLocalStorage (`nestjs-cls` и аналоги).
 
-**7.4 Request lifecycle.** Полный порядок: middleware → guards → interceptors (до) → pipes → handler → interceptors (после) → exception filters · порядок global, controller и method уровней · где какой enhancer уместен · Express и Fastify middleware.
+**7.4 Request lifecycle.** Полный порядок: middleware → guards → interceptors (до) → pipes → handler → interceptors (после) → exception filters · порядок global, controller и method уровней · до- и после-части interceptor вокруг `next.handle()` · на каком этапе возникло исключение и какой filter его поймает · где какой enhancer уместен · отличия Express и Fastify (middleware, request/response объекты).
 
 **7.5 Enhancers и metadata.** Guards и `ExecutionContext` (HTTP, RPC, WebSocket) · interceptors: трансформация ответа, таймауты, кеш · pipes: валидация и трансформация, `ValidationPipe` · exception filters · `Reflector`, `SetMetadata`, `Reflector.createDecorator`, `applyDecorators`, кастомные param decorators.
 
 **7.6 Lifecycle, циклические зависимости, платформы.** `onModuleInit`, `onApplicationBootstrap`, `onModuleDestroy`, `beforeApplicationShutdown`, `onApplicationShutdown` · `enableShutdownHooks` · циклические зависимости модулей и провайдеров, `forwardRef`, `ModuleRef`, почему цикл — симптом проблемы дизайна · lazy-loading модулей · Express против Fastify adapter.
 
 **7.7 RxJS, microservices, CQRS.** Observable в interceptors и почему Nest выбрал RxJS · операторы, которые реально нужны (`map`, `tap`, `catchError`, `timeout`) · microservices: transporters, message и event patterns · модуль CQRS: commands, queries, events, sagas · обзор `Test.createTestingModule`.
+
+## Заблуждения, которые нужно развенчать
+
+- **«Request lifecycle — линейная цепочка шагов».** Interceptor оборачивает handler: код до `next.handle()` выполняется до pipes и handler, код в операторах над результатом — на обратном пути. Глобальные, контроллерные и методные enhancers выполняются каждый в своём порядке. *(7.4)*
+- **«Exception filters — последний шаг каждого запроса».** Filters вызываются только для необработанного исключения из guards, interceptors, pipes или handler. Успешный запрос через них не проходит. Обработку исключений из middleware сверить по документации актуальной версии. *(7.4)*
+- **«Request-scoped провайдер влияет только на себя».** Scope всплывает: все провайдеры и контроллеры, которые от него зависят, тоже становятся request-scoped и создаются на каждый запрос. *(7.3)*
+- **«`forwardRef` решает проблему циклических зависимостей».** Он лишь позволяет контейнеру собрать цикл. Сам цикл остаётся признаком неверных границ модулей. *(7.6)*
+- **«Guard и middleware взаимозаменяемы».** Middleware не знает, какой handler будет вызван. Guard получает `ExecutionContext` и metadata маршрута. *(7.4, 7.5)*
 
 ## Что должно быть получено
 

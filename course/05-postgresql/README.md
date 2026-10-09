@@ -28,11 +28,11 @@
 
 **5.2 Моделирование данных.** Нормальные формы и осознанная денормализация · constraints: `CHECK`, `UNIQUE`, `FOREIGN KEY`, `EXCLUDE` · первичные ключи: identity против UUID, UUIDv4 против UUIDv7 и их влияние на индексы (встроенная генерация UUIDv7 зависит от версии PostgreSQL) · JSONB: когда уместен · soft delete и его цена.
 
-**5.3 Индексы.** Устройство B-tree · составные индексы и порядок колонок · partial, expression, covering (`INCLUDE`) · GIN, GiST, BRIN, Hash: когда какой · index-only scan и visibility map · цена индексов на запись и HOT-обновления · почему индекс не используется.
+**5.3 Индексы.** Устройство B-tree · составные индексы и порядок колонок · partial, expression, covering (`INCLUDE`) · GIN, GiST, BRIN, Hash: когда какой · index-only scan и visibility map · цена индексов на запись и HOT-обновления · почему индекс не используется · условие только по второй колонке составного индекса и skip scan (PostgreSQL 18, сверить) · когда Seq Scan оптимален · ограничения hash-индексов.
 
-**5.4 Планировщик и EXPLAIN.** `EXPLAIN (ANALYZE, BUFFERS)` · Seq Scan, Index Scan, Index Only Scan, Bitmap Scan · Nested Loop, Hash Join, Merge Join · статистика, `ANALYZE`, `default_statistics_target`, extended statistics · ошибки оценки кардинальности и их последствия · prepared statements: generic против custom plan.
+**5.4 Планировщик и EXPLAIN.** `EXPLAIN (ANALYZE, BUFFERS)` · Seq Scan, Index Scan, Index Only Scan, Bitmap Scan · Nested Loop, Hash Join, Merge Join · статистика, `ANALYZE`, `default_statistics_target`, extended statistics · ошибки оценки кардинальности и их последствия · оценка против факта: estimated и actual rows, `loops`, buffers; cost как относительная единица планировщика · prepared statements: generic против custom plan.
 
-**5.5 Транзакции, MVCC, изоляция.** ACID и что каждая буква значит в PostgreSQL · MVCC: версии строк, `xmin` / `xmax`, snapshot · Read Committed, Repeatable Read (Snapshot Isolation), Serializable (SSI) · аномалии: lost update, non-repeatable read, phantom, write skew · ошибки сериализации и обязательные retries.
+**5.5 Транзакции, MVCC, изоляция.** ACID и что каждая буква значит в PostgreSQL · MVCC: версии строк, `xmin` / `xmax`, snapshot · Read Committed, Repeatable Read (Snapshot Isolation), Serializable (SSI) · аномалии: lost update, non-repeatable read, phantom, write skew · ошибки сериализации и обязательные retries · обязательные сценарии двух конкурентных транзакций: lost update, write skew, deadlock и корректный retry при SQLSTATE `40001` и `40P01`.
 
 **5.6 Блокировки и deadlocks.** Row-level locks: `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` · `SKIP LOCKED` и `NOWAIT`, очередь задач на PostgreSQL · table-level locks и матрица конфликтов · очередь блокировок: почему `ALTER TABLE` блокирует чтения · advisory locks · deadlocks: обнаружение и предотвращение · `lock_timeout`, `statement_timeout`.
 
@@ -41,6 +41,16 @@
 **5.8 Репликация и HA.** Физическая streaming-репликация, синхронная против асинхронной · логическая репликация · replica lag и чтение своих записей · failover и split-brain (Patroni и аналоги) · бэкапы: `pg_dump` против физических, PITR.
 
 **5.9 Масштабирование и интеграция с приложением.** Декларативное партиционирование и partition pruning · почему соединение PostgreSQL дорогое (процесс на соединение) · `max_connections`, пул в приложении против PgBouncer, режимы session / transaction / statement и их ограничения (prepared statements, `SET`, advisory locks) · N+1 и batching · производительность пагинации.
+
+## Заблуждения, которые нужно развенчать
+
+- **«Составной индекс `(a, b)` не работает для `WHERE b = …`».** Обычно он неэффективен, потому что `b` не ведущая колонка. Но планировщик может пройти индекс целиком, а в PostgreSQL 18 появился skip scan для B-tree (сверить). Решение зависит от селективности и статистики. *(5.3)*
+- **«Seq Scan — всегда плохо».** Если запрос читает значительную долю таблицы, последовательное чтение дешевле случайных обращений через индекс. *(5.3, 5.4)*
+- **«Высокий `cost` в EXPLAIN доказывает, что запрос медленный».** Cost — относительная оценка планировщика в условных единицах. Смотреть нужно actual time, расхождение estimated и actual rows, `loops`, buffers. *(5.4)*
+- **«Repeatable Read в PostgreSQL защищает от всех аномалий».** Это Snapshot Isolation: фантомного чтения нет, но write skew возможен, а конфликт записи завершается ошибкой сериализации. *(5.5)*
+- **«Serializable — это просто больше блокировок».** В PostgreSQL это SSI: зависимости отслеживаются оптимистично, predicate locks никого не блокируют. Транзакция может упасть с `40001`, и приложение обязано её повторить. *(5.5)*
+- **«Hash-индекс всегда быстрее B-tree на равенстве».** Выигрыш не гарантирован, а ограничения серьёзные: только `=`, нет уникальности, нет составных индексов, нет сортировки. Crash-safe hash-индексы только с PostgreSQL 10. *(5.3)*
+- **«`VACUUM FULL` — регулярная плановая операция».** Он берёт `ACCESS EXCLUSIVE` и переписывает таблицу целиком. Регулярно работает обычный VACUUM и autovacuum. *(5.7)*
 
 ## Что должно быть получено
 

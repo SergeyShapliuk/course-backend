@@ -19,13 +19,21 @@
 
 ## Состав уроков
 
-**6.1 Паттерны работы с данными.** Active Record против Data Mapper · Repository · Unit of Work и Identity Map · Lazy Loading и его связь с N+1 · ORM против query builder (Knex, Kysely) против raw SQL: компромиссы.
+**6.1 Паттерны работы с данными.** Active Record против Data Mapper · Repository · Unit of Work и Identity Map, где они реально есть (MikroORM) и где нет (TypeORM, Prisma; сверить) · Lazy Loading и его связь с N+1 · ORM против query builder (Knex, Kysely) против raw SQL: компромиссы.
 
 **6.2 TypeORM.** Entities и relations · eager и lazy relations · `Repository`, `EntityManager`, `QueryBuilder` · транзакции через `DataSource.transaction` и `QueryRunner` · `save` против `insert` / `update` (лишние SELECT) · миграции и `synchronize` · известные подводные камни.
 
 **6.3 Prisma.** Prisma schema и сгенерированный клиент · архитектура движка запросов (менялась между мажорными версиями, сверяется с документацией) · `include` / `select` и какой SQL получается · nested writes · batch и interactive transactions · raw-запросы · ограничения · Drizzle и Kysely как альтернативы.
 
 **6.4 Транзакции и конкурентность через ORM.** Проброс транзакции через сервисы: явная передача, CLS / AsyncLocalStorage, `@Transactional`-подходы · optimistic locking через колонку version · pessimistic locking через ORM · lost update при read-modify-write · N+1 в ORM: обнаружение и решения (join, batching, DataLoader) · zero-downtime миграции по схеме expand/contract.
+
+## Заблуждения, которые нужно развенчать
+
+- **«ORM всегда защищает от SQL injection».** Raw-запросы и строковая интерполяция (в QueryBuilder TypeORM, в `$queryRawUnsafe` Prisma) уязвимы так же, как ручной SQL. *(6.2, 6.3)*
+- **«`save()` в TypeORM — это один UPDATE».** `save` может сначала выполнить SELECT, чтобы решить, делать INSERT или UPDATE. *(6.2)*
+- **«Identity Map и Unit of Work есть в любой ORM».** Классически они реализованы в Hibernate, Doctrine, MikroORM. TypeORM и Prisma их в полном виде не реализуют (сверить). *(6.1)*
+- **«Транзакция в сервисе автоматически покрывает все вызванные методы».** Только если тот же транзакционный `EntityManager` или клиент передан дальше. Иначе запросы уходят через другие соединения пула, вне транзакции. *(6.4)*
+- **«Optimistic locking предотвращает конфликты».** Он обнаруживает конфликт в момент записи. Что делать дальше (retry или ошибка клиенту), решает приложение. *(6.4)*
 
 ## Что должно быть получено
 

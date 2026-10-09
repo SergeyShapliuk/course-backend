@@ -30,6 +30,15 @@
 
 **2.5 Variance, type erasure, decorators, tsconfig.** Ковариантность и контравариантность, `strictFunctionTypes` и bivariance методов, аннотации `in` / `out` · где TypeScript намеренно unsound · type erasure и runtime-валидация на границах (class-validator, zod) · legacy decorators (`experimentalDecorators`) против стандартных TC39 decorators (TS 5.0+), `emitDecoratorMetadata` и почему NestJS на нём держится · ключевые опции tsconfig: `strict`, `module` / `moduleResolution` (`node16`, `nodenext`, `bundler`), `isolatedModules`, `verbatimModuleSyntax`.
 
+## Заблуждения, которые нужно развенчать
+
+- **«TypeScript проверяет типы во время выполнения».** Типы стираются при компиляции. На границах системы (HTTP, очереди, env, ответы внешних API) нужна runtime-валидация. *(2.5)*
+- **«Если объект совместим с типом, у него ровно эти поля».** Структурная совместимость допускает лишние поля. Excess property check срабатывает только для свежего объектного литерала. *(2.1)*
+- **«`as` — безопасное приведение типа».** Type assertion ничего не проверяет и не преобразует, это указание компилятору поверить на слово. *(2.2)*
+- **«Система типов TypeScript sound».** Она намеренно unsound: bivariance параметров методов, `any`, индексный доступ без `noUncheckedIndexedAccess`, assertions. *(2.5)*
+- **«`interface` и `type` полностью взаимозаменяемы».** Declaration merging есть только у `interface`; union, conditional и mapped types выражаются только через `type`; иерархия через `extends` проверяется компилятором эффективнее, чем пересечения. *(2.1)*
+- **«NestJS умеет инжектить по интерфейсу».** Интерфейс стирается, и в `design:paramtypes` попадает `Object`. Нужен токен: класс, строка, symbol. *(2.5, 7.1)*
+
 ## Что должно быть получено
 
 - Объясняю, почему код проходит проверку типов, но падает в рантайме, и где ставить валидацию.

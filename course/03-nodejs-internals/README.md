@@ -24,9 +24,9 @@
 
 **3.1 Архитектура Node.js и V8.** Слои: JavaScript API, C++ bindings, V8, libuv · JIT-конвейер V8: Ignition, Sparkplug, Maglev, TurboFan · hidden classes (maps), inline caches, мономорфизм и деоптимизации · что из этого реально влияет на backend-код.
 
-**3.2 Event Loop в Node.js.** Фазы libuv: timers, pending callbacks, poll, check, close · `process.nextTick` и очередь микрозадач, порядок между ними · `setImmediate` против `setTimeout(0)` · что блокирует цикл (CPU-задачи, синхронный I/O, огромный JSON) · измерение event loop lag и `monitorEventLoopDelay`.
+**3.2 Event Loop в Node.js.** Фазы libuv: timers, pending callbacks, poll, check, close · `process.nextTick` и очередь микрозадач, порядок между ними · `setImmediate` против `setTimeout(0)` · что блокирует цикл (CPU-задачи, синхронный I/O, огромный JSON) · измерение event loop lag и `monitorEventLoopDelay` · разбор порядка вывода для `nextTick`, `queueMicrotask`, `Promise.then`, `setImmediate` и `setTimeout` отдельно в CommonJS и ESM · изменения в поведении таймеров в новых версиях libuv и Node.js (сверить по changelog).
 
-**3.3 Thread Pool, Worker Threads, cluster.** Что уходит в thread pool (fs, `dns.lookup`, crypto, zlib), а что идёт через epoll/kqueue/IOCP · `UV_THREADPOOL_SIZE` и голодание пула · Worker Threads, передача данных, SharedArrayBuffer и Atomics · `child_process` · `cluster` против нескольких процессов за балансировщиком.
+**3.3 Thread Pool, Worker Threads, cluster.** Что уходит в thread pool (fs, `dns.lookup`, crypto, zlib), а что идёт через epoll/kqueue/IOCP · `UV_THREADPOOL_SIZE` и голодание пула · Worker Threads, передача данных, SharedArrayBuffer и Atomics · `child_process` · `cluster` против нескольких процессов за балансировщиком · I/O-bound против CPU-bound задач · ограничение concurrency (семафор, p-limit) против rate limiting · таймауты и отмена через `AbortSignal`.
 
 **3.4 Streams и backpressure.** Readable, Writable, Duplex, Transform · `highWaterMark` и внутренний буфер · backpressure: `write()` возвращает `false`, событие `drain` · `pipe` против `stream.pipeline` (обработка ошибок и закрытие) · object mode · async iteration по стримам · Web Streams в Node.js.
 
@@ -35,6 +35,15 @@
 **3.6 Модули: CommonJS и ESM.** Обёртка модуля CommonJS, `require` cache, синхронная загрузка · ESM: статический граф, live bindings, асинхронная загрузка, top-level await · циклические зависимости в обеих системах · `package.json`: `type`, `exports`, conditional exports · interop и `require(esm)` (доступность зависит от версии Node.js, сверяется с документацией).
 
 **3.7 Жизненный цикл процесса.** Сигналы SIGTERM / SIGINT / SIGKILL · graceful shutdown: перестать принимать соединения, дождаться запросов, закрыть пулы · `uncaughtException` и `unhandledRejection`, почему после них процесс нужно перезапускать · EventEmitter: ошибки, `error` без обработчика, утечки слушателей · AsyncLocalStorage · диагностика: `--inspect`, diagnostic reports, `--cpu-prof`.
+
+## Заблуждения, которые нужно развенчать
+
+- **«`process.nextTick` и Promise — одна очередь микрозадач».** Это две разные очереди. Node.js опустошает очередь `nextTick` перед очередью промисов, и рекурсивный `nextTick` может надолго задержать I/O. *(3.2)*
+- **«Порядок `nextTick` и `Promise.then` одинаков в любом коде».** В CommonJS-скрипте колбэк `nextTick` обычно выполняется раньше `then`. В ESM код модуля исполняется уже внутри асинхронной загрузки, и наблюдаемый порядок может быть обратным (сверить на актуальной версии Node.js). *(3.2)*
+- **«`setTimeout(fn, 0)` всегда срабатывает раньше `setImmediate`».** Из главного модуля порядок не гарантирован. Внутри I/O-колбэка `setImmediate` всегда выполняется первым. *(3.2)*
+- **«Node.js однопоточный».** JavaScript выполняется в одном потоке на event loop, но есть thread pool libuv, потоки V8 для GC и компиляции, Worker Threads. *(3.1, 3.3)*
+- **«Асинхронный `fs` ничего не нагружает».** Операции `fs`, `dns.lookup`, crypto и zlib идут в thread pool (по умолчанию 4 потока), и его можно исчерпать. *(3.3)*
+- **«Major GC всегда полностью останавливает приложение».** V8 выполняет маркировку инкрементально и конкурентно, sweeping и часть compaction — параллельно или в фоне. Паузы остаются, но это не полная остановка на всё время сборки. *(3.5)*
 
 ## Что должно быть получено
 
