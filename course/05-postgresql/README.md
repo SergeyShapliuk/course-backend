@@ -1,6 +1,6 @@
 # 05 — PostgreSQL
 
-**Prerequisites блока:** нет (SQL на уровне ежедневной работы)
+**Prerequisites блока:** других блоков курса не требует. Входной уровень: уверенные JOIN, агрегаты и `GROUP BY`, CRUD, понимание, что такое индекс и транзакция (`BEGIN` / `COMMIT` / `ROLLBACK`). Без этого блок окажется слишком плотным: он не учит SQL с нуля.
 **Следующий блок:** [06 — ORM](../06-orm/)
 **Уроков:** 9 — 2 🟢 · 2 🟡 · 5 🔴
 
@@ -34,7 +34,7 @@
 
 **5.5 Транзакции, MVCC, изоляция.** ACID и что каждая буква значит в PostgreSQL · MVCC: версии строк, `xmin` / `xmax`, snapshot · Read Committed, Repeatable Read (Snapshot Isolation), Serializable (SSI) · аномалии: lost update, non-repeatable read, phantom, write skew · ошибки сериализации и обязательные retries · обязательные сценарии двух конкурентных транзакций: lost update, write skew, deadlock и корректный retry при SQLSTATE `40001` и `40P01`.
 
-**5.6 Блокировки и deadlocks.** Row-level locks: `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` · `SKIP LOCKED` и `NOWAIT`, очередь задач на PostgreSQL · table-level locks и матрица конфликтов · очередь блокировок: почему `ALTER TABLE` блокирует чтения · advisory locks · deadlocks: обнаружение и предотвращение · `lock_timeout`, `statement_timeout`.
+**5.6 Блокировки и deadlocks.** Row-level locks: `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` · `SKIP LOCKED` и `NOWAIT`, очередь задач на PostgreSQL · table-level locks и матрица конфликтов · очередь блокировок: почему `ALTER TABLE` блокирует чтения · advisory locks · deadlocks: обнаружение и предотвращение · `lock_timeout`, `statement_timeout` · диагностика блокировок: `pg_stat_activity`, `pg_locks`, `pg_blocking_pids()` · безопасные миграции больших таблиц: `CREATE INDEX CONCURRENTLY`, constraints с `NOT VALID` и последующей `VALIDATE`, короткий `lock_timeout` с повтором.
 
 **5.7 WAL, VACUUM, bloat.** Write-Ahead Log и durability, checkpoints, `synchronous_commit` · VACUUM, autovacuum и его настройка · bloat таблиц и индексов · transaction ID wraparound и freeze · HOT updates и `fillfactor` · долгие транзакции как причина роста bloat.
 
