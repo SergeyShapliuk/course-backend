@@ -2,6 +2,8 @@
 
 > 🟢 Фундамент. Метки источника: `[spec]` — гарантия ECMAScript, `[runtime]` — поведение V8 / Node.js, `[lib]` — поведение библиотеки, `[arch]` — рекомендация. Номера разделов спецификации даны по рабочему черновику ECMAScript 2027 на tc39.es (проверено 2026-10-09); в других редакциях номера сдвигаются, поэтому ссылки ведут на якоря. Все примеры с выводом запущены на Node.js v22.22.2.
 
+**Как читать.** Обязательная часть — разделы 1–6: scope, hoisting, TDZ, `this` и их последствия для backend. Раздел 7 — углубление для Strong Middle и Senior: граница спецификации и V8, Annex B, `vm`, циклы ESM-импортов, вывод TypeScript, незадокументированное поведение. Из обязательной части на него стоят короткие ссылки.
+
 ---
 
 ## 1. Определения и назначение
@@ -11,7 +13,7 @@
 | Понятие | Коротко | Чем является |
 |---|---|---|
 | **Execution context** | «запись о выполняемом коде»: какой код сейчас исполняется и в каком окружении | спецификационная модель `[spec]` |
-| **Execution context stack** (call stack) | стек контекстов; верхний — running execution context | спецификационная модель, реализуется машинным стеком `[runtime]` |
+| **Execution context stack** (call stack) | стек контекстов; верхний — running execution context | спецификационная модель `[spec]`; движок воспроизводит её поведение своими механизмами `[runtime]` |
 | **Environment Record** | таблица связываний «имя → значение» плюс ссылка на внешнее окружение `[[OuterEnv]]` | спецификационная модель `[spec]` |
 | **Binding** (связывание) | одна запись «имя → значение» внутри Environment Record; может быть ещё не инициализирована | `[spec]` |
 | **`this` binding** | значение `this`, которое хранит Function Environment Record обычной функции | `[spec]` |
@@ -65,7 +67,12 @@ Call stack в момент выполнения show      Scope chain функц
 
 **Что гарантирует спецификация** `[spec]`. Дословно: «The execution context stack is used to track execution contexts. The running execution context is always the top element of this stack» и «An execution context is purely a specification mechanism and need not correspond to any particular artefact of an ECMAScript implementation» ([9.4 Execution Contexts](https://tc39.es/ecma262/#sec-execution-contexts)). Спецификация также разрешает **приостанавливать** контекст и позже продолжать его — на этом построены генераторы и async-функции (разбор в 1.4).
 
-**Что зависит от реализации** `[runtime]`. Физически V8 исполняет функции на машинном стеке. Его размер ограничен; при переполнении V8 бросает `RangeError` с текстом `Maximum call stack size exceeded`. Предел глубины спецификацией не задан и зависит от движка, платформы и размера кадров.
+**Что зависит от реализации** `[runtime]`. Движок обязан воспроизвести **поведение** модели, но не её устройство. В V8 машинный стек участвует в выполнении функций, однако соответствие «один execution context — один кадр стека» не обязано быть точным:
+
+- приостановленная async-функция или генератор по спецификации снимается со стека и продолжает работу позже, поэтому её состояние не может жить в кадре машинного стека;
+- оптимизирующие компиляторы движков могут встраивать вызываемую функцию в вызывающую.
+
+Наблюдаемое следствие одно: глубина вложенных вызовов ограничена. При переполнении V8 бросает `RangeError` с текстом `Maximum call stack size exceeded`. Предел спецификацией не задан и зависит от движка, платформы и размера кадров.
 
 **Пример.**
 
@@ -106,13 +113,7 @@ try { rec(); } catch (e) { console.log(`${e.name}: ${e.message}`); }
 
 **Что гарантирует спецификация** `[spec]`: только семантику поиска. Дословно: «Environment Records are purely specification mechanisms and need not correspond to any specific artefact of an ECMAScript implementation» ([9.1](https://tc39.es/ecma262/#sec-environment-records)).
 
-**Что зависит от реализации** `[runtime]`. V8 не создаёт объект на каждое окружение. По статье команды V8 о lazy parsing ([v8.dev/blog/preparser](https://v8.dev/blog/preparser)):
-
-- переменные, на которые не ссылаются вложенные функции, живут на машинном стеке;
-- переменные, на которые ссылаются вложенные функции, размещаются в куче, в структуре «context»;
-- верхний уровень скрипта всегда в куче, потому что виден другим скриптам.
-
-Что из этого следует для памяти — тема 1.2.
+**Что зависит от реализации** `[runtime]`. V8 не создаёт объект на каждое окружение: переменные хранятся по-разному в зависимости от того, захвачены ли они вложенными функциями. Подробнее — [7.1](#71-спецификация-описывает-модель-а-не-память), последствия для памяти — 1.2.
 
 **Пример: лексический, а не динамический scope.**
 
@@ -190,7 +191,7 @@ const viaConst = () => 'const';
 
 Первая ошибка — вызов `undefined`, вторая — чтение связывания в TDZ.
 
-**Что зависит от режима** `[spec]`, Annex B. В нестрогом коде function declaration внутри блока (`if (…) { function g() {} }`) дополнительно создаёт `var`-связывание в функции. Его значение — `undefined` до выполнения блока ([B.3.2](https://tc39.es/ecma262/#sec-block-level-function-declarations-web-legacy-compatibility-semantics)). В строгом коде функция видна только внутри блока. Это правило существует ради совместимости с вебом, а V8 и Node.js его реализуют. Пример — фрагмент [P9](./interview.md#p9-функция-в-блоке-sloppy-и-strict).
+**Что зависит от режима** `[spec]`. В нестрогом коде function declaration внутри блока ведёт себя иначе, чем в строгом (Annex B). Это исключение ради совместимости с вебом, разбор — в [7.3](#73-annex-b-функции-в-блоках-и-var-в-catch).
 
 **Типичная ошибка и диагностика.** Сообщение об ошибке сразу показывает механизм:
 
@@ -241,7 +242,7 @@ console.log(start());
 | параметры по умолчанию | `function f(a = b, b = 1)`, вызов `f()` | `ReferenceError`: `b` ещё не инициализирован; `f(5)` → `[5, 1]` |
 | `switch` | `let` в одном `case`, чтение в другом | `ReferenceError`: весь `switch` — один блок |
 | `class` | `new C()` до `class C {}` | `ReferenceError`: классы не «поднимаются» как функции |
-| циклы ESM-импортов | модуль читает класс из ещё не выполненного модуля | `ReferenceError` (см. Senior-нюансы) |
+| циклы ESM-импортов | модуль читает класс из ещё не выполненного модуля | `ReferenceError` ([7.5](#75-tdz-при-циклических-es-импортах)) |
 
 **Сравнение.**
 
@@ -348,16 +349,9 @@ var a = 1;
 let b = 2;
 console.log(globalThis.a, globalThis.b, this === module.exports);
 // undefined undefined true
-
-const vm = require('node:vm');
-vm.runInThisContext('var sa = 1; let sb = 2; function sf() {}');
-console.log(globalThis.sa, globalThis.sb, typeof globalThis.sf);
-// 1 undefined function
-console.log(vm.runInThisContext('sb'));
-// 2
 ```
 
-Код внутри `vm.runInThisContext` выполняется как classic script над глобальным объектом. Документация Node.js: «runs it within the context of the current `global`… does not have access to local scope». `var sa` и `function sf` стали свойствами глобального объекта. `let sb` свойством не стал, но виден следующему скрипту того же realm.
+Как увидеть в Node.js поведение classic script, где `var` становится свойством глобального объекта, — [7.4](#74-classic-script-в-nodejs-vmruninthiscontext).
 
 **Пример (Node.js, файл `.mjs`).**
 
@@ -405,15 +399,27 @@ console.log(globalThis.counter);
    - `strict` — использовать `thisArg` как есть;
    - иначе (нестрогий код) — `undefined` и `null` заменяются глобальным `this`, примитивы оборачиваются в объекты (`ToObject`).
 
-**Правила по приоритету.**
+**Сначала различим операции.** `call` и `apply` **вызывают** функцию сразу с указанным `this`. `bind` ничего не вызывает: он **создаёт** новую связанную функцию (bound function), у которой `this` зафиксирован. `new` — **конструирование**: это отдельный путь, не обычный вызов. Поэтому правил два набора.
 
-| Приоритет | Форма вызова | `this` |
-|---|---|---|
-| 1 | `new F()` | новый объект; `bind` при этом игнорирует привязанный `this`, но сохраняет привязанные аргументы ([10.4.1.2](https://tc39.es/ecma262/#sec-bound-function-exotic-objects-construct-argumentslist-newtarget)) |
-| 2 | `f.call(x)`, `f.apply(x)`, `f.bind(x)` | `x`; связанную функцию нельзя перепривязать повторным `bind` или `call` |
-| 3 | `obj.f()` | `obj` — объект слева от точки в момент вызова |
-| 4 | `f()` | `undefined` в strict mode, глобальный `this` в нестрогом коде |
-| — | стрелочная функция | `this` окружающего кода; `call` / `bind` / `new` его не меняют, `new` бросает `TypeError` |
+**Случай 1. Обычный вызов `(...)`.** Проверять сверху вниз, первое совпадение решает:
+
+| Что вызывается и как | `this` |
+|---|---|
+| стрелочная функция, любой формой | `this` окружающего кода; `call`, `apply` и `bind` его не меняют |
+| связанная функция (результат `bind`), любой формой | привязанный `this`; повторный `bind`, `call`, `apply` и вызов как метода его не меняют |
+| `f.call(x, …)` / `f.apply(x, […])` | `x` (в нестрогом коде с преобразованием, см. шаг 3 выше) |
+| `obj.f()` | `obj` — база Reference в момент вызова |
+| `f()` | `undefined` в strict mode, глобальный `this` в нестрогом коде |
+
+**Случай 2. Вызов через `new F(...)`.**
+
+| Что конструируется | Результат |
+|---|---|
+| обычная функция или класс | `this` — новый объект с прототипом `F.prototype` |
+| связанная функция | привязанный `this` **игнорируется**, привязанные аргументы сохраняются, объект создаётся целевой функцией ([10.4.1.2](https://tc39.es/ecma262/#sec-bound-function-exotic-objects-construct-argumentslist-newtarget)) |
+| стрелочная функция, сокращённый метод `{ m() {} }` | `TypeError: … is not a constructor` |
+
+Короткая формулировка для интервью: «`new` сильнее `bind`» означает именно второй случай. При конструировании связанной функции привязанный `this` не используется. При обычном вызове связанной функции он неизменен.
 
 **Пример: правила в strict mode.**
 
@@ -488,12 +494,7 @@ console.log(child.self === child); // true
 
 Getter объявлен в `base`, но вызван при чтении свойства у `child`, поэтому `this === child`. Подробнее о поиске свойств по прототипам — в 1.3.
 
-**Что зависит от хоста и библиотек.**
-
-- Глобальный `this` в classic script определяет хост `[spec]`.
-- С каким `this` вызвать колбэк, решает вызывающий код. Node.js EventEmitter намеренно вызывает обычный listener с `this`, равным emitter. Документация: «the standard `this` keyword is intentionally set to reference the `EventEmitter` instance» ([events](https://nodejs.org/docs/latest-v22.x/api/events.html#passing-arguments-and-this-to-listeners)) `[runtime]`.
-- Таймеры Node.js вызывают колбэк `setTimeout` с `this`, равным объекту `Timeout` (проверено на v22.22.2). Это наблюдаемая деталь реализации, а не задокументированный контракт: полагаться на неё нельзя `[runtime]`.
-- NestJS вызывает метод контроллера на экземпляре: в исходниках `RouterExecutionContext` это `callback.apply(instance, args)`. Поэтому внутри handler `this` корректен `[lib]`.
+**Что зависит от хоста и библиотек.** С каким `this` вызвать колбэк, решает вызывающий код. Пример из Node.js: EventEmitter намеренно вызывает обычный listener с `this`, равным emitter. Документация: «the standard `this` keyword is intentionally set to reference the `EventEmitter` instance» ([events](https://nodejs.org/docs/latest-v22.x/api/events.html#passing-arguments-and-this-to-listeners)) `[runtime]`. Другие уровни гарантий — таймеры, NestJS, глобальный `this` — разобраны в [7.6](#76-глобальный-this-определяет-хост) и [7.7](#77-this-колбэка--контракт-вызывающего-api).
 
 **Вложенная обычная функция теряет `this`.**
 
@@ -621,15 +622,21 @@ export class ReportService {
 
 ## 4. Причины и следствия для backend
 
-**Модульный scope — это общее состояние процесса** `[runtime]` + `[arch]`. CommonJS-модуль и ESM-модуль выполняются один раз на процесс и кешируются. Переменная верхнего уровня (`let currentUser`) или поле singleton-провайдера Nest — общие для **всех** одновременных запросов. Лексический scope не умеет нести контекст запроса через `await` и границы модулей. Для этого есть явная передача, AsyncLocalStorage (3.7) и REQUEST scope (7.3).
+**Модульный scope — состояние, общее для всех запросов** `[runtime]` + `[arch]`. Модуль выполняется один раз **на запись в кеше своего загрузчика**, а не «один раз на процесс» как универсальное правило:
+
+- CommonJS кеширует по разрешённому имени файла (`require.cache`). Документация Node.js прямо предупреждает: разные разрешённые пути к одному файлу — разные модули. Пример — `./foo` и `./FOO` на файловой системе без учёта регистра или две копии пакета в разных `node_modules` ([Module caching caveats](https://nodejs.org/docs/latest-v22.x/api/modules.html#module-caching-caveats)). Удаление записи из `require.cache` приводит к повторному выполнению.
+- ESM кеширует по URL: `./m.mjs?v=1` и `./m.mjs?v=2` — два разных модуля ([ESM: URLs](https://nodejs.org/docs/latest-v22.x/api/esm.html#urls)).
+- Worker Thread выполняет модули заново, со своим `globalThis` (проверено запуском на v22.22.2).
+
+В типичном сервере каждый модуль загружается по одному пути, поэтому на практике он выполнен один раз в каждом процессе и в каждом worker. Его переменная верхнего уровня (`let currentUser`) или поле singleton-провайдера Nest — общие для **всех** одновременных запросов этого процесса. Лексический scope не умеет нести контекст запроса через `await` и границы модулей. Для этого есть явная передача, AsyncLocalStorage (3.7) и REQUEST scope (7.3). Механика загрузчиков — 3.6.
 
 **Строгий режим — норма для сервера.** ESM и тела классов строгие всегда. CommonJS-файлы без `'use strict'` — нет. TypeScript при включённом `alwaysStrict` (входит в `strict`) добавляет `"use strict"` в каждый выходной файл. Значения по умолчанию флагов TypeScript меняются между версиями, поэтому опираться стоит на явную настройку в `tsconfig.json`, а не на умолчание.
 
-**Скомпилированный код вызывает импорты без `this`** `[lib]`. TypeScript начиная с 4.4 при выводе в CommonJS генерирует вызовы импортированных функций вида `(0, module_1.fn)()`, чтобы `this` не был объектом модуля, как и в настоящих ES-модулях ([TypeScript 4.4 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html), раздел «More-Compliant Indirect Calls for Imported Functions»). Такие строки в стектрейсах и бандлах — это не мусор, а сохранение семантики ESM.
-
 **Глубина рекурсии ограничена** `[runtime]`. Рекурсивная обработка входных данных произвольной вложенности — потенциальный `RangeError` на запросе.
 
-**Порядок инициализации модулей виден через TDZ.** В ESM цикл импортов может дать `ReferenceError: Cannot access 'X' before initialization` при загрузке. В CommonJS тот же цикл даёт `undefined` из недозаполненного `module.exports`. В NestJS с TypeScript, скомпилированным в CommonJS, это проявляется как `undefined` вместо класса в метаданных — отсюда ошибки разрешения зависимостей и `forwardRef` (3.6, 7.6).
+**Порядок инициализации модулей виден через TDZ.** Цикл ESM-импортов может дать `ReferenceError` при загрузке, а тот же цикл в CommonJS — `undefined`. Разбор — в [7.5](#75-tdz-при-циклических-es-импортах).
+
+**Скомпилированный TypeScript вызывает импорты как `(0, module_1.fn)()`**, чтобы не передавать объект модуля как `this`. Разбор — в [7.2](#72-reference-record-и-0-fn).
 
 ---
 
@@ -662,21 +669,41 @@ export class ReportService {
 - **«Scope chain — это call stack».** Стек — кто вызвал, цепочка — где объявлено. Функция, вызванная из глубины стека, ищет имена в своей лексической цепочке (2.1, 2.2).
 - **«TDZ — это место в коде выше объявления».** Это время: функция, объявленная выше, может читать переменную, если вызвана после инициализации (2.4).
 - **«`const` делает объект неизменяемым».** `const` запрещает переприсвоить связывание. Неизменяемость значения — `Object.freeze`, и та поверхностная (1.3).
-- **«В Node.js `var` верхнего уровня становится глобальной».** Не в CommonJS и не в ESM: в CommonJS это локальная переменная обёртки модуля. Глобальной она становится только при выполнении как classic script, например через `vm.runInThisContext` (2.6).
+- **«В Node.js `var` верхнего уровня становится глобальной».** Не в CommonJS и не в ESM: в CommonJS это локальная переменная обёртки модуля. Глобальной она становится только при выполнении как classic script, например через `vm.runInThisContext` (2.6, 7.4).
 - **«Сообщения об ошибках гарантированы языком».** Спецификация гарантирует тип (`ReferenceError`, `TypeError`), а текст — это V8 (2.4).
 
 ---
 
-## 7. Senior-нюансы
+## 7. Углубление для Strong Middle / Senior
 
-**Спецификация описывает модель, а не память.** Execution contexts и Environment Records — «purely specification mechanisms». Корректная реализация обязана давать то же **наблюдаемое** поведение. V8 держит невостребованные замыканиями переменные на стеке, а захваченные — в общем для scope heap-context ([v8.dev/blog/preparser](https://v8.dev/blog/preparser)). Поэтому на вопрос «где физически лежит переменная» правильный ответ начинается с оговорки, что спецификация этого не определяет. Последствия для памяти — 1.2.
+Обязательная часть урока — разделы 1–6. Этот раздел нужен для Strong Middle и Senior. Здесь граница между спецификацией и реализацией и случаи, которые редко встречаются в рабочем коде, но часто — в вопросах на понимание.
 
-**Reference Record — ключ ко всем случаям потери `this`.** Выражение слева от `()` вычисляется в Reference Record ([6.2.5](https://tc39.es/ecma262/#sec-reference-record-specification-type)). `this` берётся из его базы только при прямом вызове property reference. Группировка `( )` сохраняет Reference. Запятая, присваивание, тернарный оператор, `||`, `??`, деструктуризация, передача аргументом — превращают его в значение. Отсюда же `(0, fn)()` в выводе TypeScript 4.4+ и бандлеров.
+### 7.1 Спецификация описывает модель, а не память
 
-**Annex B действует в Node.js.**
+Execution contexts и Environment Records — «purely specification mechanisms». Корректная реализация обязана давать то же **наблюдаемое** поведение, но может устроить память как угодно. Что делает V8, по статье команды V8 о lazy parsing ([v8.dev/blog/preparser](https://v8.dev/blog/preparser)):
 
-- Function declaration в блоке нестрогого кода создаёт дополнительное `var`-связывание ([B.3.2](https://tc39.es/ecma262/#sec-block-level-function-declarations-web-legacy-compatibility-semantics)).
-- `var` с тем же именем, что параметр `catch`, разрешён и присваивает **параметру catch**, а не внешней переменной ([B.3.4](https://tc39.es/ecma262/#sec-variablestatements-in-catch-blocks)):
+- функции исполняются на машинном стеке;
+- переменные, на которые не ссылаются вложенные функции, живут в кадре стека и исчезают вместе с ним;
+- переменные, на которые ссылаются вложенные функции, размещаются в куче, в структуре «context», общей для scope;
+- верхний уровень скрипта всегда в куче, потому что виден другим скриптам.
+
+Поэтому на вопрос «где физически лежит переменная» правильный ответ начинается с оговорки, что спецификация этого не определяет. Последствия для памяти — 1.2.
+
+### 7.2 Reference Record и `(0, fn)()`
+
+Выражение слева от `()` вычисляется в Reference Record ([6.2.5](https://tc39.es/ecma262/#sec-reference-record-specification-type)). `this` берётся из его базы только при прямом вызове property reference.
+
+- Группировка `( )` и optional call `?.()` сохраняют Reference.
+- Запятая, присваивание, тернарный оператор, `||`, `??`, деструктуризация, передача аргументом превращают его в значение.
+
+На этом построен вывод компиляторов. TypeScript начиная с 4.4 при выводе в CommonJS вызывает импортированные функции как `(0, module_1.fn)()`, чтобы `this` не был объектом модуля, как и в настоящих ES-модулях ([TypeScript 4.4 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html), раздел «More-Compliant Indirect Calls for Imported Functions») `[lib]`. Такие строки в скомпилированном коде и стектрейсах — не мусор, а сохранение семантики ESM.
+
+### 7.3 Annex B: функции в блоках и `var` в `catch`
+
+Annex B описывает поведение ради совместимости с вебом. V8 и Node.js его реализуют, но только в нестрогом коде.
+
+- **Function declaration в блоке** дополнительно создаёт `var`-связывание в функции. Его значение — `undefined` до выполнения блока, после — функция. В strict mode функция видна только внутри блока ([B.3.2](https://tc39.es/ecma262/#sec-block-level-function-declarations-web-legacy-compatibility-semantics)). Пример — [P9](./interview.md#p9-функция-в-блоке-sloppy-и-strict).
+- **`var` с тем же именем, что параметр `catch`**, разрешён и присваивает **параметру catch**, а не внешней переменной ([B.3.4](https://tc39.es/ecma262/#sec-variablestatements-in-catch-blocks)):
 
 ```js
 var e = 'outer';
@@ -684,9 +711,25 @@ try { throw new Error('boom'); } catch (e) { var e = 'inner-var'; }
 console.log(e); // outer
 ```
 
-`var e` поднят в функцию, но присваивание `= 'inner-var'` разрешается внутри `catch` к ближайшему связыванию — параметру `e`.
+`var e` поднят в область модуля, но присваивание `= 'inner-var'` разрешается внутри `catch` к ближайшему связыванию — параметру `e`.
 
-**TDZ при циклических ES-импортах.**
+### 7.4 Classic script в Node.js: `vm.runInThisContext`
+
+CommonJS и ESM скрывают семантику classic script, но её можно увидеть через `vm.runInThisContext`. Документация Node.js: «runs it within the context of the current `global`… does not have access to local scope» ([vm](https://nodejs.org/docs/latest-v22.x/api/vm.html#vmruninthiscontextcode-options)).
+
+```js
+// файл .cjs
+const vm = require('node:vm');
+vm.runInThisContext('var sa = 1; let sb = 2; function sf() {}');
+console.log(globalThis.sa, globalThis.sb, typeof globalThis.sf);
+// 1 undefined function
+console.log(vm.runInThisContext('sb'));
+// 2
+```
+
+`var sa` и `function sf` стали свойствами глобального объекта (Object Record). `let sb` свойством не стал (Declarative Record), но виден следующему скрипту того же realm.
+
+### 7.5 TDZ при циклических ES-импортах
 
 ```js
 // a.mjs
@@ -703,9 +746,22 @@ try { console.log(typeof A); } catch (e) { console.log(`${e.name}: ${e.message}`
 
 Запуск `node a.mjs`. Граф загружается целиком, затем модули выполняются в порядке обхода: `b.mjs` раньше `a.mjs`. Импорт `A` — live binding на ещё не инициализированное связывание `class A`, поэтому верхний уровень `b.mjs` попадает в TDZ. Функция `useA`, вызванная позже, видит уже инициализированный класс. Это та же «временная» природа TDZ, только между модулями. Механика графа модулей — 3.6.
 
-**Глобальный `this` определяет хост.** `[[GlobalThisValue]]` задаёт хост («Hosts may provide any ECMAScript Object value»). Переносимый способ получить глобальный объект — `globalThis`, а не верхнеуровневый `this`, который в CommonJS равен `module.exports`, а в ESM — `undefined`.
+В CommonJS тот же цикл даёт не `ReferenceError`, а `undefined`: `require` возвращает текущий, ещё не заполненный `module.exports`. В NestJS с TypeScript, скомпилированным в CommonJS, цикл файлов проявляется как `undefined` вместо класса в metadata типов конструктора. Отсюда ошибки разрешения зависимостей и `forwardRef` (7.6).
 
-**`this` колбэка — контракт вызывающего API.** Язык определяет механизм, но значение задаёт тот, кто вызывает: EventEmitter (документировано), `Array.prototype.map` (`thisArg`), таймеры Node.js (наблюдаемо, не документировано). На собеседовании сильный ответ разделяет эти уровни гарантий.
+### 7.6 Глобальный `this` определяет хост
+
+`[[GlobalThisValue]]` задаёт хост («Hosts may provide any ECMAScript Object value»). Переносимый способ получить глобальный объект — `globalThis`, а не верхнеуровневый `this`, который в CommonJS равен `module.exports`, а в ESM — `undefined`.
+
+### 7.7 `this` колбэка — контракт вызывающего API
+
+Язык определяет механизм, а значение `this` в колбэке задаёт тот, кто вызывает. Уровни гарантий разные:
+
+- **EventEmitter** вызывает обычный listener с `this === emitter` — это задокументировано `[runtime]`.
+- **`Array.prototype.map`** и аналоги передают `thisArg` из второго аргумента `[spec]`.
+- **Таймеры Node.js** вызывают колбэк `setTimeout` с `this`, равным объекту `Timeout` (проверено на v22.22.2). Это наблюдаемая деталь реализации, а не задокументированный контракт, полагаться на неё нельзя `[runtime]`.
+- **NestJS** вызывает метод контроллера как `callback.apply(instance, args)` (исходники `RouterExecutionContext`), поэтому внутри handler `this` корректен `[lib]`.
+
+На собеседовании сильный ответ разделяет эти уровни гарантий.
 
 ---
 
