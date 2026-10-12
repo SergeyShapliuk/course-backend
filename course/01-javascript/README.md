@@ -15,25 +15,25 @@
 | # | Тема | Уровень | Ключевой вопрос урока | Текст |
 |---|---|---|---|---|
 | 1.1 | Execution context, scope, hoisting, TDZ, `this` | 🟢 | откуда функция берёт каждое имя и чему равен `this` в этом вызове | [01-execution-context-scope-this](./01-execution-context-scope-this/) |
-| 1.2 | Closures | 🟢 | что именно удерживает замыкание и почему это приводит к утечкам | — |
-| 1.3 | Прототипы и классы | 🟡 | что происходит при `new` и `obj.method()` на уровне `[[Prototype]]` | — |
-| 1.4 | Promises и async/await | 🟡 | как Promise разрешается, что делает `await` и куда пропадают ошибки | — |
-| 1.5 | Event Loop на уровне спецификации | 🟡 | что гарантирует ECMAScript, а что определяет хост | — |
-| 1.6 | Iterators, generators, слабые ссылки, числа | 🟡 | как устроены протоколы итерации и почему `0.1 + 0.2 !== 0.3` | — |
+| 1.2 | Closures | 🟢 | что именно удерживает замыкание и почему это приводит к утечкам | [02-closures](./02-closures/) |
+| 1.3 | Прототипы и классы | 🟡 | что происходит при `new` и `obj.method()` на уровне `[[Prototype]]` | [03-prototypes-classes](./03-prototypes-classes/) |
+| 1.4 | Promises и async/await | 🟡 | как Promise разрешается, что делает `await` и куда пропадают ошибки | [04-promises-async-await](./04-promises-async-await/) |
+| 1.5 | Event Loop на уровне спецификации | 🟡 | что гарантирует ECMAScript, а что определяет хост | [05-event-loop-spec](./05-event-loop-spec/) |
+| 1.6 | Iterators, generators, слабые ссылки, числа | 🟡 | как устроены протоколы итерации и почему `0.1 + 0.2 !== 0.3` | [06-iterators-weakrefs-numbers](./06-iterators-weakrefs-numbers/) |
 
 ## Состав уроков
 
-**1.1 Execution context, scope, hoisting, TDZ, `this`.** Execution context и call stack · Environment Records и scope chain · фаза инстанцирования и hoisting · TDZ · блочный scope и per-iteration binding · глобальный scope в script, CommonJS и ESM · четыре правила `this` и их приоритет · стрелочные функции · потеря `this` в callback · граница «спецификация против реализации» (детали V8 Context — в 1.2).
+**1.1 Execution context, scope, hoisting, TDZ, `this`.** Execution context и call stack · Environment Records и scope chain · фаза инстанцирования и hoisting · TDZ · блочный scope и per-iteration binding · глобальный scope в script, CommonJS и ESM · правила `this` в двух случаях: обычный вызов и `new` · стрелочные функции · потеря `this` в callback · граница «спецификация против реализации» (детали V8 Context — в 1.2) · углубление: Reference Record и `(0, fn)()`, Annex B, `vm.runInThisContext`, TDZ в циклах ESM-импортов, имя функционального выражения, `new Function` и косвенный `eval`.
 
-**1.2 Closures.** `[[Environment]]` у функции · что реально удерживается (V8 Context, общий для замыканий одного scope) · утечки через замыкания в обработчиках, таймерах и кешах · module pattern и приватное состояние · замыкания против классов.
+**1.2 Closures.** `[[Environment]]` у функции · что реально удерживается (V8 Context, общий для замыканий одного scope) · утечки через замыкания в обработчиках, таймерах и кешах · module pattern и приватное состояние · обёртки `once` / `memoize` и сохранение `this` · замыкания против классов · углубление: решение о размещении при разборе кода, прямой `eval`, цепочки контекстов, retainers в heap snapshot, приостановленная async-функция как замыкание, что спецификация говорит о сборке мусора.
 
-**1.3 Прототипы и классы.** `[[Prototype]]` и поиск свойств · `new` по шагам · `class` как синтаксис над прототипами и что в нём действительно нового (`#private`, static blocks, строгий режим, TDZ класса) · дескрипторы свойств, `Object.freeze` · Proxy и Reflect · наследование против композиции.
+**1.3 Прототипы и классы.** `[[Prototype]]` и поиск свойств · `new` по шагам · `class` как синтаксис над прототипами и что в нём действительно нового (`#private`, static blocks, строгий режим, TDZ класса) · поля классов как определение (DefineField) и `useDefineForClassFields` в TypeScript · порядок инициализации полей и конструкторов при наследовании · дескрипторы свойств, `Object.freeze` · Proxy и Reflect, receiver и инварианты · `instanceof`, realm и дубли пакетов · наследование, композиция и фабрики классов (mapped types NestJS) · углубление: `super` и `[[HomeObject]]`, механизм prototype pollution через `__proto__`, расширение встроенных классов.
 
-**1.4 Promises и async/await.** Состояния и resolution procedure (thenable assimilation) · `then` всегда асинхронен · async/await как синтаксис над Promise и генераторами · ошибки, unhandled rejections · иерархия ошибок: собственные классы, `cause`, `AggregateError` · `Promise.all` / `allSettled` / `race` / `any` · отмена через AbortController · параллельное и последовательное выполнение.
+**1.4 Promises и async/await.** Состояния и resolution procedure (thenable assimilation) · `then` всегда асинхронен · async/await как синтаксис над Promise и генераторами · ошибки, unhandled rejections · иерархия ошибок: собственные классы, `cause`, `AggregateError` · `Promise.all` / `allSettled` / `race` / `any` · отмена через `AbortController`, `AbortSignal.timeout` и `AbortSignal.any` · параллельное и последовательное выполнение, ловушка `forEach` · callback-API и `util.promisify` · углубление: job разрешения thenable, как Node.js находит необработанные отклонения, async-функция как приостановленный контекст, async stack traces.
 
-**1.5 Event Loop на уровне спецификации.** Agent, job queues, HostEnqueuePromiseJob · что ECMAScript говорит о микрозадачах и чего не говорит · модель браузера (HTML spec) против Node.js · порядок `await`-продолжений · голодание макрозадач. Подводка к 3.2.
+**1.5 Event Loop на уровне спецификации.** Agent, jobs и требования к хосту, HostEnqueuePromiseJob и FIFO · что ECMAScript говорит о микрозадачах и чего не говорит · модель браузера (HTML spec) против Node.js · порядок `await`-продолжений и цена `await` / `return` в jobs · голодание макрозадач и как уступить управление · гонки между `await` · углубление: история спецификации (ES2019, ES2020), `[[CanBlock]]`, другие виды jobs. Подводка к 3.2.
 
-**1.6 Iterators, generators, слабые ссылки, числа.** Протоколы iterable/iterator · generators и async generators, `for await` · Symbol и well-known symbols · WeakMap, WeakRef, FinalizationRegistry и почему на них нельзя строить логику · coercion и `==` · IEEE 754, `Number.MAX_SAFE_INTEGER`, BigInt и деньги · JSON-сериализация на границе сервиса: `toJSON`, что теряется (`Date`, `Map`, `BigInt`, `undefined`), `structuredClone` против `JSON.parse(JSON.stringify())`.
+**1.6 Iterators, generators, слабые ссылки, числа.** Протоколы iterable/iterator · generators и async generators, `for await` · Symbol и well-known symbols · WeakMap, WeakRef, FinalizationRegistry и почему на них нельзя строить логику · coercion и `==` · IEEE 754, `Number.MAX_SAFE_INTEGER`, BigInt и деньги · JSON-сериализация на границе сервиса: `toJSON`, что теряется (`Date`, `Map`, `BigInt`, `undefined`), `structuredClone` против `JSON.parse(JSON.stringify())` · углубление: IteratorClose, iterator helpers (ES2025), `using` и `Symbol.dispose` (статус в спецификации и Node.js 22), алгоритм `==`, `-0` и `NaN`.
 
 ## Заблуждения, которые нужно развенчать
 
@@ -42,18 +42,24 @@
 - **«Замыкание удерживает только переменные, которые использует».** Спецификация `[spec]` описывает семантику: функция связана с лексическим окружением целиком, но не требует физически хранить каждую переменную. Фактическое хранение определяет движок `[runtime]`: V8 размещает в контексте только захваченные переменные, однако этот контекст общий для всех замыканий одного scope. Поэтому переменная, захваченная одним замыканием, живёт, пока жив любой из них. *(1.2)*
 - **«`class` — новая объектная модель».** Класс работает поверх прототипов. Действительно новое: `#private`, строгий режим тела класса, TDZ, запрет вызова без `new`. *(1.3)*
 - **«`await` блокирует поток, пока ждёт».** Приостанавливается только текущая async-функция. Продолжение ставится в очередь микрозадач, поток свободен для другой работы. *(1.4)*
-- **«Event Loop — часть языка JavaScript».** ECMAScript определяет jobs и очередь промисов, а сам цикл задаёт хост: HTML spec в браузере, libuv в Node.js. *(1.5)*
+- **«Event Loop — часть языка JavaScript».** ECMAScript определяет jobs, требования к их выполнению и порядок promise jobs, а сам цикл задаёт хост: HTML spec в браузере, libuv и Node.js на сервере. *(1.5)*
+- **«`0.1 + 0.2 !== 0.3` — баг JavaScript».** Это свойство двоичной плавающей точки IEEE 754, общее для большинства языков. Number точно хранит целые только до `Number.MAX_SAFE_INTEGER`, поэтому деньги и идентификаторы `bigint` требуют другого представления. *(1.6)*
+- **«FinalizationRegistry закроет ресурс, когда объект станет не нужен».** Спецификация не гарантирует ни сборку объекта, ни вызов колбэка очистки; при завершении процесса колбэки не вызываются. Ресурсы освобождают явно. *(1.6)*
 
 ## Что должно быть получено
 
 - По фрагменту кода точно говорю, какое значение увидит каждая ссылка на имя и чему равен `this`, и объясняю почему через механизм, а не через «так принято».
 - Нахожу потерю `this`, TDZ-ошибку и утечку через замыкание при чтении кода.
 - Объясняю порядок выполнения синхронного кода, микрозадач и макрозадач и отделяю гарантии языка от поведения Node.js.
+- Нахожу необработанные отклонения, голодание event loop и гонки между `await` в серверном коде.
+- Выбираю представление денег, дат и идентификаторов для контракта API и объясняю, что теряется при сериализации.
 
 ## Границы с соседними уроками
 
 - **1.4 и 1.5 против 3.2.** В блоке 01 — то, что гарантирует язык: Promise jobs, порядок продолжений `await`, что ECMAScript говорит о микрозадачах. Фазы event loop Node.js, `process.nextTick`, `setImmediate` и таймеры разбираются только в 3.2.
 - **1.2 против 3.5.** В 1.2 — что удерживает замыкание и почему возникает утечка. Как устроен сборщик мусора V8 и как искать утечку в production — 3.5.
+- **1.6 против 3.4.** В 1.6 — протокол асинхронной итерации и закрытие итератора; потоки только как async iterable. Буферы, `highWaterMark`, `pipeline` и backpressure потоков — 3.4.
+- **1.3 против 2.5 и 7.1.** В 1.3 — поля классов и наследование в рантайме, включая `useDefineForClassFields`. Decorators, `emitDecoratorMetadata` и DI — 2.5 и 7.1.
 
 ## Связи с другими блоками
 

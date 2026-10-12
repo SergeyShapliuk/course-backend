@@ -1,8 +1,8 @@
 # 1.1 Execution context, scope, hoisting, TDZ, `this` — theory
 
-> 🟢 Фундамент. Метки источника: `[spec]` — гарантия ECMAScript, `[runtime]` — поведение V8 / Node.js, `[lib]` — поведение библиотеки, `[arch]` — рекомендация. Номера разделов спецификации даны по рабочему черновику ECMAScript 2027 на tc39.es (проверено 2026-10-09); в других редакциях номера сдвигаются, поэтому ссылки ведут на якоря. Все примеры с выводом запущены на Node.js v22.22.2.
+> 🟢 Фундамент. Метки источника: `[spec]` — гарантия ECMAScript, `[runtime]` — поведение V8 / Node.js, `[lib]` — поведение библиотеки, `[arch]` — рекомендация. Номера разделов спецификации даны по рабочему черновику ECMAScript 2027 на tc39.es (черновик от 2026-10-09, номера и цитаты сверены 2026-10-12); в других редакциях номера сдвигаются, поэтому ссылки ведут на якоря. Все примеры с выводом запущены на Node.js v22.22.2.
 
-**Как читать.** Обязательная часть — разделы 1–6: scope, hoisting, TDZ, `this` и их последствия для backend. Раздел 7 — углубление для Strong Middle и Senior: граница спецификации и V8, Annex B, `vm`, циклы ESM-импортов, вывод TypeScript, незадокументированное поведение. Из обязательной части на него стоят короткие ссылки.
+**Как читать.** Обязательная часть — разделы 1–6: scope, hoisting, TDZ, `this` и их последствия для backend. Раздел 7 — углубление для Strong Middle и Senior: граница спецификации и V8, Annex B, `vm`, циклы ESM-импортов, вывод TypeScript, незадокументированное поведение, особые окружения (имя функционального выражения, `new Function`, косвенный `eval`). Из обязательной части на него стоят короткие ссылки.
 
 ---
 
@@ -514,7 +514,7 @@ console.log(new T().start()); // undefined — тело класса всегд�
 
 ### 2.8 Потеря `this` при передаче метода в callback
 
-**Что это.** `s.find` в позиции аргумента — это вычисление значения свойства: в функцию передаётся **сам объект функции**, без информации об `s`. Когда принимающий код вызовет её как `fn(x)`, сработает правило 4.
+**Что это.** `s.find` в позиции аргумента — это вычисление значения свойства: в функцию передаётся **сам объект функции**, без информации об `s`. Когда принимающий код вызовет её как `fn(x)`, сработает последняя строка таблицы обычного вызова из 2.7: `f()` без базы, то есть `this === undefined` в строгом коде.
 
 **Пример.**
 
@@ -616,7 +616,7 @@ export class ReportService {
 
 **Решение и выбор** `[arch]`. `ids.map((id) => this.loadOne(id))` — стрелка берёт `this` из `build`, метод остаётся на прототипе, его можно мокать через `jest.spyOn(ReportService.prototype, 'loadOne')`. Поле-стрелку стоит выбирать, только если метод постоянно передаётся как колбэк, и цена (функция на каждом экземпляре, недоступность через прототип) осознана. Для singleton-провайдера Nest память не важна, а вот тестируемость — важна.
 
-**Что изменится, если переписать на ESM или убрать `'use strict'`?** Ничего: тело класса строгое всегда. Исключение — компиляция в `target` ES5: класс превращается в функцию-конструктор, и строгость тогда зависит от `alwaysStrict`. А вот в обычной нестрогой функции (не методе класса) вместо исключения получилось бы чтение `globalThis.repo` и тихое `undefined` — см. пример с `counter`.
+**Что изменится, если переписать на ESM или убрать `'use strict'`?** Ничего: тело класса строгое всегда. Исключение — компиляция в `target` ES5: класс превращается в функцию-конструктор, и строгость тогда зависит от `alwaysStrict`. Это касается старых версий компилятора: в TypeScript 7.0 значение `target=ES5` удалено (проверено на 7.0.2: ошибка TS5108), в 5.9.3 оно ещё работало. А вот в обычной нестрогой функции (не методе класса) вместо исключения получилось бы чтение `globalThis.repo` и тихое `undefined` — см. пример с `counter`.
 
 ---
 
@@ -628,7 +628,7 @@ export class ReportService {
 - ESM кеширует по URL: `./m.mjs?v=1` и `./m.mjs?v=2` — два разных модуля ([ESM: URLs](https://nodejs.org/docs/latest-v22.x/api/esm.html#urls)).
 - Worker Thread выполняет модули заново, со своим `globalThis` (проверено запуском на v22.22.2).
 
-В типичном сервере каждый модуль загружается по одному пути, поэтому на практике он выполнен один раз в каждом процессе и в каждом worker. Его переменная верхнего уровня (`let currentUser`) или поле singleton-провайдера Nest — общие для **всех** одновременных запросов этого процесса. Лексический scope не умеет нести контекст запроса через `await` и границы модулей. Для этого есть явная передача, AsyncLocalStorage (3.7) и REQUEST scope (7.3). Механика загрузчиков — 3.6.
+В типичном сервере каждый модуль загружается по одному пути, поэтому на практике он выполнен один раз в каждом процессе и в каждом worker. Его переменная верхнего уровня (`let currentUser`) или поле singleton-провайдера Nest — общие для **всех** одновременных запросов этого процесса. Лексический scope не умеет нести контекст запроса через `await` и границы модулей. Для этого есть явная передача, AsyncLocalStorage (урок 3.7) и REQUEST scope (урок 7.3). Механика загрузчиков — 3.6.
 
 **Строгий режим — норма для сервера.** ESM и тела классов строгие всегда. CommonJS-файлы без `'use strict'` — нет. TypeScript при включённом `alwaysStrict` (входит в `strict`) добавляет `"use strict"` в каждый выходной файл. Значения по умолчанию флагов TypeScript меняются между версиями, поэтому опираться стоит на явную настройку в `tsconfig.json`, а не на умолчание.
 
@@ -652,7 +652,7 @@ export class ReportService {
 
 - явный параметр: прозрачно, но тянется через все слои;
 - AsyncLocalStorage: неявно, работает через `await` (3.7);
-- REQUEST-scoped провайдеры Nest: удобно, но дорого по производительности (7.3).
+- REQUEST-scoped провайдеры Nest: удобно, но дорого по производительности (урок 7.3).
 
 Лексический scope и `this` для этого не подходят.
 
@@ -746,7 +746,7 @@ try { console.log(typeof A); } catch (e) { console.log(`${e.name}: ${e.message}`
 
 Запуск `node a.mjs`. Граф загружается целиком, затем модули выполняются в порядке обхода: `b.mjs` раньше `a.mjs`. Импорт `A` — live binding на ещё не инициализированное связывание `class A`, поэтому верхний уровень `b.mjs` попадает в TDZ. Функция `useA`, вызванная позже, видит уже инициализированный класс. Это та же «временная» природа TDZ, только между модулями. Механика графа модулей — 3.6.
 
-В CommonJS тот же цикл даёт не `ReferenceError`, а `undefined`: `require` возвращает текущий, ещё не заполненный `module.exports`. В NestJS с TypeScript, скомпилированным в CommonJS, цикл файлов проявляется как `undefined` вместо класса в metadata типов конструктора. Отсюда ошибки разрешения зависимостей и `forwardRef` (7.6).
+В CommonJS тот же цикл даёт не `ReferenceError`, а `undefined`: `require` возвращает текущий, ещё не заполненный `module.exports`. Node.js при этом предупреждает в stderr: `Warning: Accessing non-existent property 'A' of module exports inside circular dependency` (проверено запуском на v22.22.2) `[runtime]`. Это предупреждение — быстрый способ найти цикл в CommonJS-сборке. В NestJS с TypeScript, скомпилированным в CommonJS, цикл файлов проявляется как `undefined` вместо класса в metadata типов конструктора. Отсюда ошибки разрешения зависимостей и `forwardRef` (урок 7.6).
 
 ### 7.6 Глобальный `this` определяет хост
 
@@ -759,20 +759,51 @@ try { console.log(typeof A); } catch (e) { console.log(`${e.name}: ${e.message}`
 - **EventEmitter** вызывает обычный listener с `this === emitter` — это задокументировано `[runtime]`.
 - **`Array.prototype.map`** и аналоги передают `thisArg` из второго аргумента `[spec]`.
 - **Таймеры Node.js** вызывают колбэк `setTimeout` с `this`, равным объекту `Timeout` (проверено на v22.22.2). Это наблюдаемая деталь реализации, а не задокументированный контракт, полагаться на неё нельзя `[runtime]`.
-- **NestJS** вызывает метод контроллера как `callback.apply(instance, args)` (исходники `RouterExecutionContext`), поэтому внутри handler `this` корректен `[lib]`.
+- **NestJS** вызывает метод контроллера как `callback.apply(instance, args)` (исходники `RouterExecutionContext`, проверено в v12.1.3), поэтому внутри handler `this` корректен `[lib]`.
 
 На собеседовании сильный ответ разделяет эти уровни гарантий.
+
+### 7.8 Окружения, которые создаёт не объявление: имя функционального выражения, `new Function`, косвенный `eval`
+
+Три случая, где цепочка окружений устроена не так, как подсказывает текст программы `[spec]`.
+
+**Имя named function expression.** В `const fact = function self(n) { … }` имя `self` не попадает в окружающий scope. Спецификация создаёт для него **отдельное окружение** между функцией и внешним кодом и кладёт туда **неизменяемое** связывание `self` ([15.2.5 InstantiateOrdinaryFunctionExpression](https://tc39.es/ecma262/#sec-runtime-semantics-instantiateordinaryfunctionexpression)). Присваивание этому имени в нестрогом коде молча игнорируется, в строгом — `TypeError` ([9.1.1.1.5 SetMutableBinding](https://tc39.es/ecma262/#sec-declarative-environment-records-setmutablebinding-n-v-s)).
+
+```js
+// файл .cjs, нестрогий
+const fact = function self(n) { return n <= 1 ? 1 : n * self(n - 1); };
+console.log(fact(5), typeof self);  // 120 undefined
+const sloppy = function inner() { inner = 1; return typeof inner; };
+console.log(sloppy());              // function — присваивание проигнорировано
+```
+
+С `'use strict'` то же присваивание бросает `TypeError: Assignment to constant variable.` (текст V8). Практический смысл: имя выражения — надёжная ссылка на саму функцию для рекурсии и снятия listener'а, даже если внешнюю переменную потом переприсвоят.
+
+**`new Function` и косвенный `eval` не видят локальный scope.** Функция из `new Function(...)` получает в качестве `[[Environment]]` **глобальное окружение realm**, а не окружение места вызова ([CreateDynamicFunction](https://tc39.es/ecma262/#sec-createdynamicfunction): «Let envRecord be currentRealm.[[GlobalEnv]]»). Прямой вызов `eval(...)` выполняет код в текущем окружении. Косвенный — `(0, eval)(...)`, `const e = eval; e(...)` — в глобальном ([19.2.1.1 PerformEval](https://tc39.es/ecma262/#sec-performeval)). Это тот же механизм Reference из [7.2](#72-reference-record-и-0-fn): «прямым» считается только вызов по имени `eval`.
+
+```js
+// файл .cjs
+const x = 'module';
+function test() {
+  const x = 'local';
+  return [eval('x'), (0, eval)('typeof x'), new Function('return typeof x')()];
+}
+console.log(test()); // [ 'local', 'undefined', 'undefined' ]
+```
+
+`x` модуля тоже не виден: в CommonJS это локальная переменная обёртки, а не глобальное связывание. Следствие для backend: код, который собирает функцию из строки (шаблонизаторы, «конфиг как выражение»), не получит доступ к локальным переменным, но получит доступ к глобальному объекту процесса. Поэтому выполнение строк, пришедших извне, — уязвимость, а не изоляция (`vm` тоже не является механизмом безопасности, это прямо написано в документации Node.js; разбор — 8.5).
 
 ---
 
 ## 8. Источники
 
-Проверены 2026-10-09.
+Проверены 2026-10-12: черновик ECMAScript от 2026-10-09, документация Node.js latest-v22.x (на дату проверки — v22.23.3; примеры запускались на v22.22.2), исходники NestJS v12.1.3.
 
 **ECMAScript** (рабочий черновик ECMAScript 2027, tc39.es/ecma262; номера разделов по этому черновику):
 
 - [6.2.5 The Reference Record Specification Type](https://tc39.es/ecma262/#sec-reference-record-specification-type)
 - [9.1 Environment Records](https://tc39.es/ecma262/#sec-environment-records), в том числе [9.1.1.3 Function Environment Records](https://tc39.es/ecma262/#sec-function-environment-records), [9.1.1.4 Global Environment Records](https://tc39.es/ecma262/#sec-global-environment-records), [9.1.1.5 Module Environment Records](https://tc39.es/ecma262/#sec-module-environment-records)
+- [9.1.1.1.5 SetMutableBinding (Declarative Environment Record)](https://tc39.es/ecma262/#sec-declarative-environment-records-setmutablebinding-n-v-s)
 - [9.4 Execution Contexts](https://tc39.es/ecma262/#sec-execution-contexts), [9.4.2 ResolveBinding](https://tc39.es/ecma262/#sec-resolvebinding)
 - [10.2.1.2 OrdinaryCallBindThis](https://tc39.es/ecma262/#sec-ordinarycallbindthis)
 - [10.2.11 FunctionDeclarationInstantiation](https://tc39.es/ecma262/#sec-functiondeclarationinstantiation)
@@ -781,19 +812,21 @@ try { console.log(typeof A); } catch (e) { console.log(`${e.name}: ${e.message}`
 - [13.3.6 Function Calls](https://tc39.es/ecma262/#sec-function-calls), [EvaluateCall](https://tc39.es/ecma262/#sec-evaluatecall)
 - [14.3.1 Let, Const, Using, and Await Using Declarations](https://tc39.es/ecma262/#sec-let-and-const-declarations), [14.3.2 Variable Statement](https://tc39.es/ecma262/#sec-variable-statement)
 - [14.7.4.4 CreatePerIterationEnvironment](https://tc39.es/ecma262/#sec-createperiterationenvironment)
+- [15.2.5 InstantiateOrdinaryFunctionExpression](https://tc39.es/ecma262/#sec-runtime-semantics-instantiateordinaryfunctionexpression)
 - [15.3 Arrow Function Definitions](https://tc39.es/ecma262/#sec-arrow-function-definitions)
 - [16.1.7 GlobalDeclarationInstantiation](https://tc39.es/ecma262/#sec-globaldeclarationinstantiation)
+- [19.2.1.1 PerformEval](https://tc39.es/ecma262/#sec-performeval), [20.2.1.1.1 CreateDynamicFunction](https://tc39.es/ecma262/#sec-createdynamicfunction)
 - [B.3.2 Block-Level Function Declarations Web Legacy Compatibility Semantics](https://tc39.es/ecma262/#sec-block-level-function-declarations-web-legacy-compatibility-semantics), [B.3.4 VariableStatements in Catch Blocks](https://tc39.es/ecma262/#sec-variablestatements-in-catch-blocks)
 
 **Node.js v22 documentation:**
 
 - [Modules: The module wrapper](https://nodejs.org/docs/latest-v22.x/api/modules.html#the-module-wrapper)
 - [Events: Passing arguments and `this` to listeners](https://nodejs.org/docs/latest-v22.x/api/events.html#passing-arguments-and-this-to-listeners)
-- [VM: `vm.runInThisContext()`](https://nodejs.org/docs/latest-v22.x/api/vm.html#vmruninthiscontextcode-options)
+- [VM: `vm.runInThisContext()`](https://nodejs.org/docs/latest-v22.x/api/vm.html#vmruninthiscontextcode-options), там же предупреждение «The `node:vm` module is not a security mechanism»
 
 **V8, TypeScript, NestJS:**
 
 - Toon Verwaest, Marja Hölttä. [Blazingly fast parsing, part 2: lazy parsing](https://v8.dev/blog/preparser), V8 blog, 2019-04-15 — stack- и context-allocated переменные
 - [TypeScript 4.4 release notes: More-Compliant Indirect Calls for Imported Functions](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html)
 - [TSConfig: alwaysStrict](https://www.typescriptlang.org/tsconfig/alwaysStrict.html)
-- NestJS, [`packages/core/router/router-execution-context.ts`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts) — вызов handler через `callback.apply(instance, args)` (ветка `master` на 2026-10-09)
+- NestJS v12.1.3, [`packages/core/router/router-execution-context.ts`](https://github.com/nestjs/nest/blob/v12.1.3/packages/core/router/router-execution-context.ts) — вызов handler через `callback.apply(instance, args)`
