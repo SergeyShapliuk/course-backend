@@ -29,11 +29,11 @@
 
 **1.3 Прототипы и классы.** `[[Prototype]]` и поиск свойств · `new` по шагам · `class` как синтаксис над прототипами и что в нём действительно нового (`#private`, static blocks, строгий режим, TDZ класса) · дескрипторы свойств, `Object.freeze` · Proxy и Reflect · наследование против композиции.
 
-**1.4 Promises и async/await.** Состояния и resolution procedure (thenable assimilation) · `then` всегда асинхронен · async/await как синтаксис над Promise и генераторами · ошибки, unhandled rejections · `Promise.all` / `allSettled` / `race` / `any` · отмена через AbortController · параллельное и последовательное выполнение.
+**1.4 Promises и async/await.** Состояния и resolution procedure (thenable assimilation) · `then` всегда асинхронен · async/await как синтаксис над Promise и генераторами · ошибки, unhandled rejections · иерархия ошибок: собственные классы, `cause`, `AggregateError` · `Promise.all` / `allSettled` / `race` / `any` · отмена через AbortController · параллельное и последовательное выполнение.
 
 **1.5 Event Loop на уровне спецификации.** Agent, job queues, HostEnqueuePromiseJob · что ECMAScript говорит о микрозадачах и чего не говорит · модель браузера (HTML spec) против Node.js · порядок `await`-продолжений · голодание макрозадач. Подводка к 3.2.
 
-**1.6 Iterators, generators, слабые ссылки, числа.** Протоколы iterable/iterator · generators и async generators, `for await` · Symbol и well-known symbols · WeakMap, WeakRef, FinalizationRegistry и почему на них нельзя строить логику · coercion и `==` · IEEE 754, `Number.MAX_SAFE_INTEGER`, BigInt и деньги.
+**1.6 Iterators, generators, слабые ссылки, числа.** Протоколы iterable/iterator · generators и async generators, `for await` · Symbol и well-known symbols · WeakMap, WeakRef, FinalizationRegistry и почему на них нельзя строить логику · coercion и `==` · IEEE 754, `Number.MAX_SAFE_INTEGER`, BigInt и деньги · JSON-сериализация на границе сервиса: `toJSON`, что теряется (`Date`, `Map`, `BigInt`, `undefined`), `structuredClone` против `JSON.parse(JSON.stringify())`.
 
 ## Заблуждения, которые нужно развенчать
 

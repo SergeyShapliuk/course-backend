@@ -21,22 +21,23 @@
 
 ## Состав уроков
 
-**11.1 Стратегия тестирования.** Пирамида против testing trophy · unit, integration, E2E: что каждый уровень доказывает и сколько стоит · test doubles: dummy, stub, spy, mock, fake · тестирование в NestJS: `Test.createTestingModule`, `overrideProvider` · Testcontainers против in-memory баз · тестирование гонок и отказов: конкурентные запросы, падение зависимости, таймауты · тестирование транзакций (изоляция тестов, откат, уровни изоляции) и повторной доставки сообщений (идемпотентность консьюмера).
+**11.1 Стратегия тестирования.** Пирамида против testing trophy · unit, integration, E2E: что каждый уровень доказывает и сколько стоит · test doubles: dummy, stub, spy, mock, fake · TDD: где окупается и где нет · тестирование в NestJS: `Test.createTestingModule`, `overrideProvider` · Testcontainers против in-memory баз · тестирование гонок и отказов: конкурентные запросы, падение зависимости, таймауты · тестирование транзакций (изоляция тестов, откат, уровни изоляции) и повторной доставки сообщений (идемпотентность консьюмера).
 
-**11.2 Contract testing и качество тестов.** Consumer-driven contracts, Pact · OpenAPI как контракт · flaky tests: причины и борьба с ними · тестовые данные и изоляция · мутационное тестирование · coverage как метрика и её ограничения.
+**11.2 Contract testing и качество тестов.** Consumer-driven contracts, Pact · OpenAPI как контракт · flaky tests: причины и борьба с ними, управление временем и случайностью (fake timers, фиксированные seed и id) · тестовые данные и изоляция · мутационное тестирование · coverage как метрика и её ограничения.
 
-**11.3 Docker и CI/CD.** Слои образа и кеш · multi-stage builds · выбор базового образа: alpine (musl) против slim против distroless · Node.js в контейнере: PID 1 и сигналы, лимиты памяти и CPU · конфигурация и секреты между окружениями (12-factor) · rolling, blue-green, canary · миграции базы в пайплайне и обратная совместимость · feature flags.
+**11.3 Docker и CI/CD.** Слои образа и кеш · multi-stage builds · выбор базового образа: alpine (musl) против slim против distroless · Node.js в контейнере: PID 1 и сигналы, лимиты памяти и CPU · минимум Kubernetes для backend-разработчика: Pod, Deployment, Service, Ingress, ConfigMap и Secret, requests и limits, CPU throttling и его след в event loop lag, HPA · конфигурация и секреты между окружениями (12-factor) · rolling, blue-green, canary · миграции базы в пайплайне и обратная совместимость · feature flags.
 
 **11.4 Observability.** Структурные логи (pino), уровни, correlation ID · метрики: RED и USE, типы Prometheus (counter, gauge, histogram, summary), cardinality · distributed tracing: spans, context propagation, W3C `traceparent` · OpenTelemetry: SDK, auto-instrumentation, collector, sampling.
 
-**11.5 Resilience.** Liveness, readiness и startup probes и почему liveness не должна проверять базу · Docker `HEALTHCHECK` против probes Kubernetes · graceful shutdown в Kubernetes: SIGTERM, `preStop`, снятие с балансировки · timeouts и deadline propagation · retries и retry storm · circuit breaker · bulkhead · load shedding и backpressure на уровне сервиса.
+**11.5 Resilience.** Liveness, readiness и startup probes и почему liveness не должна проверять базу · Docker `HEALTHCHECK` против probes Kubernetes · graceful shutdown в Kubernetes: SIGTERM, `preStop`, снятие с балансировки · timeouts и deadline propagation · retries и retry storm · circuit breaker · bulkhead · load shedding и backpressure на уровне сервиса · chaos engineering: проверка этих механизмов внесёнными отказами.
 
-**11.6 SRE и диагностика инцидентов.** Определения и разница · выбор SLI · error budget и политика его расходования · алерты по симптомам, а не по причинам, burn rate · инцидент-менеджмент и blameless postmortem · методика диагностики типовых инцидентов: CPU 100%, рост памяти, рост p99, исчерпание пула соединений, event loop lag.
+**11.6 SRE и диагностика инцидентов.** SLI, SLO, SLA: определения и разница · выбор SLI · доступность в девятках и допустимый простой, MTTR и MTBF, доступность цепочки последовательных зависимостей · error budget и политика его расходования · алерты по симптомам, а не по причинам, burn rate · инцидент-менеджмент и blameless postmortem · методика диагностики типовых инцидентов: CPU 100%, рост памяти, рост p99, исчерпание пула соединений, event loop lag, исчерпание файловых дескрипторов (`EMFILE`, `ulimit`).
 
 ## Заблуждения, которые нужно развенчать
 
 - **«Docker `HEALTHCHECK` сообщает Kubernetes о состоянии приложения».** Kubernetes его не использует. Нужны собственные liveness, readiness и startup probes в манифесте. *(11.5)*
 - **«`node:alpine` всегда лучше для production».** Alpine использует musl вместо glibc, что может ломать нативные модули и менять поведение (DNS, производительность). Выбор между alpine, slim и distroless — по совместимости, размеру, безопасности и удобству диагностики. *(11.3)*
+- **«CPU limit в Kubernetes выделяет контейнеру ядра».** Limit реализуется квотой CFS: контейнер, израсходовавший квоту за период, простаивает до следующего периода (throttling). Для Node.js это выглядит как всплески event loop lag и p99 при невысокой средней загрузке CPU. *(11.3)*
 - **«Liveness probe должна проверять базу данных».** При недоступности базы Kubernetes перезапустит все поды. Это не поможет и усилит каскадный отказ. Зависимости проверяются в readiness, и то с осторожностью. *(11.5)*
 - **«Чем больше моков, тем надёжнее тесты».** Моки проверяют взаимодействие с реализацией, а не поведение. Интеграционные тесты с реальной базой (Testcontainers) ловят другой класс ошибок. *(11.1)*
 - **«100% coverage — значит багов нет».** Coverage показывает выполненные строки, а не проверенные утверждения. *(11.2)*

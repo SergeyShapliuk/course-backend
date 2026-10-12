@@ -25,7 +25,7 @@
 
 **6.3 Prisma.** Prisma schema и сгенерированный клиент · архитектура движка запросов (менялась между мажорными версиями, сверяется с документацией) · `include` / `select` и какой SQL получается · nested writes · batch и interactive transactions · raw-запросы · ограничения · Drizzle и Kysely как альтернативы.
 
-**6.4 Транзакции и конкурентность через ORM.** Проброс транзакции через сервисы: явная передача, CLS / AsyncLocalStorage, `@Transactional`-подходы · optimistic locking через колонку version · pessimistic locking через ORM · lost update при read-modify-write · N+1 в ORM: обнаружение и решения (join, batching, DataLoader) · zero-downtime миграции по схеме expand/contract.
+**6.4 Транзакции и конкурентность через ORM.** Проброс транзакции через сервисы: явная передача, CLS / AsyncLocalStorage, `@Transactional`-подходы · вложенные транзакции через savepoint и как их выражают TypeORM и Prisma (сверить) · optimistic locking через колонку version · pessimistic locking через ORM · lost update при read-modify-write · N+1 в ORM: обнаружение и решения (join, batching, DataLoader) · zero-downtime миграции по схеме expand/contract.
 
 ## Заблуждения, которые нужно развенчать
 

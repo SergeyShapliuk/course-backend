@@ -22,19 +22,20 @@
 
 ## Состав уроков
 
-**9.1 Архитектура и структуры данных Redis.** Однопоточное выполнение команд и I/O threads · String, Hash, List, Set, Sorted Set, Stream, Bitmap, HyperLogLog · внутренние encodings (listpack, skiplist, intset) · сложность операций, опасные команды (`KEYS`, большие `HGETALL`, `DEL` больших ключей против `UNLINK`) · pipelining.
+**9.1 Архитектура и структуры данных Redis.** Однопоточное выполнение команд и I/O threads · String, Hash, List, Set, Sorted Set, Stream, Bitmap, HyperLogLog · внутренние encodings (listpack, skiplist, intset) · сложность операций, опасные команды (`KEYS`, большие `HGETALL`, `DEL` больших ключей против `UNLINK`) · pipelining · Pub/Sub против Streams: какие гарантии доставки у каждого.
 
 **9.2 Persistence, репликация, Cluster, eviction.** RDB и AOF, политики `appendfsync`, что теряется при сбое · асинхронная репликация и `WAIT` · Sentinel · Cluster: hash slots, hash tags, мультиключевые операции · `maxmemory` и политики eviction · как работает истечение ключей.
 
 **9.3 Паттерны кеширования.** Cache-aside, read-through, write-through, write-behind · выбор TTL · инвалидация: по событию, по версии, по TTL · гонки между записью в базу и инвалидацией кеша · многоуровневый кеш (in-process + Redis) · что не стоит кешировать.
 
-**9.4 Отказы кеша и атомарность.** Cache stampede: блокировка, probabilistic early expiration, request coalescing · hot keys и big keys · cache penetration и Bloom filter · cache avalanche и jitter TTL · `MULTI` / `EXEC` / `WATCH` · Lua-скрипты и functions.
+**9.4 Отказы кеша и атомарность.** Cache stampede: блокировка, probabilistic early expiration, request coalescing · hot keys и big keys · cache penetration и Bloom filter · cache avalanche и jitter TTL · `MULTI` / `EXEC` / `WATCH` · Lua-скрипты и functions · Redis недоступен: reconnection, offline queue клиента (ioredis), таймауты команд, работа сервиса без кеша.
 
-**9.5 Performance engineering.** Latency против throughput · перцентили и почему среднее врёт · закон Литтла и закон Амдала · профилирование Node.js: CPU profile, flamegraphs, clinic.js · нагрузочное тестирование (k6, autocannon) и coordinated omission · вертикальное против горизонтального масштабирования, stateless-сервисы.
+**9.5 Performance engineering.** Latency против throughput · перцентили и почему среднее врёт · закон Литтла и закон Амдала · профилирование Node.js: CPU profile, flamegraphs, clinic.js · нагрузочное тестирование (k6, autocannon): load, stress, soak, spike; coordinated omission · вертикальное против горизонтального масштабирования, stateless-сервисы.
 
 ## Заблуждения, которые нужно развенчать
 
 - **«Redis однопоточный, значит любая логика на нём атомарна».** Атомарна каждая отдельная команда. Последовательность «прочитал, решил, записал» без `MULTI`/`WATCH` или Lua — нет. *(9.1, 9.4)*
+- **«Redis Pub/Sub — надёжная очередь сообщений».** Сообщение получают только подписчики, подключённые в момент публикации. Отключившийся подписчик его теряет, подтверждений нет. Доставку с подтверждением дают Streams с consumer groups. *(9.1)*
 - **«AOF с `appendfsync everysec` не теряет данных».** При сбое можно потерять примерно последнюю секунду записей. `always` надёжнее, но заметно медленнее. *(9.2)*
 - **«Expiration и eviction — одно и то же».** Expiration удаляет ключи с истёкшим TTL (лениво при обращении и активной выборкой). Eviction вытесняет ключи при достижении `maxmemory` по выбранной политике. *(9.2)*
 - **«Удалить ключ из кеша после записи в базу — значит сохранить согласованность».** Конкурентное чтение может вернуть старое значение в кеш уже после инвалидации. Помогают TTL, версии значений, отложенная повторная инвалидация. *(9.3)*

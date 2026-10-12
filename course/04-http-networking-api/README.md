@@ -23,15 +23,15 @@
 
 **4.1 TCP, DNS, TLS.** Трёхстороннее рукопожатие, keep-alive, алгоритм Нейгла, TIME_WAIT и исчерпание портов · DNS: резолвинг, TTL, `dns.lookup` против `dns.resolve` в Node.js · TLS 1.2 против TLS 1.3 (число round-trip, 0-RTT и replay) · SNI, сертификаты, mTLS.
 
-**4.2 Версии HTTP и семантика.** HTTP/1.1: persistent connections, pipelining и почему его не используют · HTTP/2: бинарные фреймы, multiplexing, HPACK, head-of-line blocking на уровне TCP · HTTP/3 и QUIC · методы, коды ответов (401 против 403, 409 против 422), важные заголовки.
+**4.2 Версии HTTP и семантика.** HTTP/1.1: persistent connections, pipelining и почему его не используют · HTTP/2: бинарные фреймы, multiplexing, HPACK, head-of-line blocking на уровне TCP · HTTP/3 и QUIC · методы, коды ответов (401 против 403, 409 против 422), важные заголовки · сжатие (`Content-Encoding`: gzip, brotli) и его цена для CPU.
 
-**4.3 REST и API design.** Ресурсы и операции, safe и idempotent методы по RFC 9110 · пагинация offset против cursor (keyset) · фильтрация и сортировка · версионирование (URL, header, media type) · формат ошибок: Problem Details (RFC 9457) · REST против GraphQL против gRPC.
+**4.3 REST и API design.** Ресурсы и операции, safe и idempotent методы по RFC 9110 · пагинация offset против cursor (keyset) · фильтрация и сортировка · версионирование (URL, header, media type) · формат ошибок: Problem Details (RFC 9457) · модель зрелости Ричардсона и HATEOAS · загрузка файлов в API: multipart, presigned URL в объектное хранилище, лимиты (потоковый приём — 3.4) · REST против GraphQL против gRPC · GraphQL: N+1 в резолверах и DataLoader, ограничение глубины и сложности запроса · gRPC: protobuf, streaming, deadlines.
 
-**4.4 Idempotency в API.** Почему POST не идемпотентен и как это исправить: `Idempotency-Key`, хранение результата, гонка двух одинаковых запросов · optimistic concurrency через `ETag` и `If-Match` · безопасные retries на клиенте и на прокси.
+**4.4 Idempotency в API.** Почему POST не идемпотентен и как это исправить: `Idempotency-Key`, хранение результата, гонка двух одинаковых запросов · optimistic concurrency через `ETag` и `If-Match` · безопасные retries на клиенте и на прокси · webhooks: подпись HMAC, защита от replay по timestamp, повторная доставка и дедупликация по id события.
 
 **4.5 HTTP caching и CORS.** `Cache-Control` (`max-age`, `no-cache` против `no-store`, `private`, `s-maxage`, `stale-while-revalidate`) · ETag и `304 Not Modified` · `Vary` · CDN и reverse proxy · CORS: simple requests, preflight, `credentials`, почему CORS защищает пользователя браузера, а не сервер.
 
-**4.6 Real-time, таймауты, балансировщики.** WebSocket, SSE, long polling: сравнение и масштабирование · таймауты: connect, read, idle, общий deadline · таймауты HTTP-сервера Node.js (`headersTimeout`, `requestTimeout`, `keepAliveTimeout`) и их согласование с балансировщиком · L4 против L7 балансировки · reverse proxy, `X-Forwarded-*`.
+**4.6 Real-time, таймауты, балансировщики.** WebSocket, SSE, long polling: сравнение и масштабирование (Socket.IO, Redis adapter) · таймауты: connect, read, idle, общий deadline · таймауты HTTP-сервера Node.js (`headersTimeout`, `requestTimeout`, `keepAliveTimeout`) и их согласование с балансировщиком · исходящие запросы из Node.js: `fetch` и undici, пул соединений, keep-alive и таймауты клиента · L4 против L7 балансировки · алгоритмы балансировки (round robin, least connections, хеширование), sticky sessions и их цена · reverse proxy, `X-Forwarded-*`.
 
 ## Заблуждения, которые нужно развенчать
 
@@ -39,6 +39,7 @@
 - **«CORS защищает сервер от чужих запросов».** CORS ограничивает чтение ответа скриптом в браузере. Simple request доходит до сервера и выполняется, а curl и серверные клиенты CORS не проверяют вообще. *(4.5)*
 - **«`Cache-Control: no-cache` запрещает кеширование».** `no-cache` разрешает хранить ответ, но требует ревалидации перед использованием. Запрет хранения — `no-store`. *(4.5)*
 - **«HTTP/2 полностью убрал head-of-line blocking».** Он убрал HOL blocking на уровне HTTP, но на уровне TCP потеря пакета задерживает все потоки соединения. Это решает QUIC в HTTP/3. *(4.2)*
+- **«Провайдер доставит webhook ровно один раз».** Доставка webhooks — at-least-once: провайдер повторяет запрос, если не получил успешный ответ вовремя, и может прислать одно событие дважды. Обработчик дедуплицирует события по id. *(4.4)*
 - **«Таймаут на клиенте останавливает работу на сервере».** Сервер продолжает обрабатывать запрос. Нужны отмена и передача deadline по цепочке вызовов. *(4.6)*
 
 ## Что должно быть получено

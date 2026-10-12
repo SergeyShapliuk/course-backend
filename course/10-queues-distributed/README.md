@@ -21,15 +21,15 @@
 
 ## Состав уроков
 
-**10.1 Основы messaging.** Point-to-point, pub/sub, log · push против pull · порядок сообщений и партиционирование · at-most-once, at-least-once, effectively-once · ack и visibility timeout · синхронное против асинхронного взаимодействия.
+**10.1 Основы messaging.** Point-to-point, pub/sub, log · push против pull · порядок сообщений и партиционирование · at-most-once, at-least-once, effectively-once · ack и visibility timeout · синхронное против асинхронного взаимодействия · где место NATS и Redis Streams рядом с BullMQ, RabbitMQ и Kafka.
 
-**10.2 BullMQ.** Как BullMQ хранит задачи в Redis (lists, sorted sets, Lua) · жизненный цикл job: waiting, active, delayed, completed, failed · retries и backoff · stalled jobs и lock duration · concurrency и rate limiting · flows (parent/child) · интеграция с NestJS.
+**10.2 BullMQ.** Как BullMQ хранит задачи в Redis (lists, sorted sets, Lua) · жизненный цикл job: waiting, active, delayed, completed, failed · retries и backoff · stalled jobs и lock duration · concurrency и rate limiting · flows (parent/child) · периодические задачи: планировщик BullMQ (API зависит от версии, сверить) против `@nestjs/schedule` в нескольких инстансах · интеграция с NestJS.
 
 **10.3 RabbitMQ.** Модель AMQP 0-9-1: exchange, queue, binding · типы exchange: direct, topic, fanout, headers · ack, nack, requeue · prefetch и справедливое распределение · dead letter exchange · classic против quorum queues, streams · publisher confirms.
 
 **10.4 Kafka.** Topics, partitions, offsets · consumer groups и rebalancing (eager против cooperative) · репликация: leader, ISR, `acks`, `min.insync.replicas` · idempotent producer, transactions, exactly-once semantics и их границы · retention и compaction · KRaft вместо ZooKeeper.
 
-**10.5 Надёжная доставка.** Retries с exponential backoff и jitter · DLQ и poison messages · idempotent consumer и inbox-таблица · Transactional Outbox: проблема dual write и её решение · CDC (Debezium) как альтернатива polling · порядок обработки и повторная доставка.
+**10.5 Надёжная доставка.** Retries с exponential backoff и jitter · DLQ и poison messages · idempotent consumer и inbox-таблица · Transactional Outbox: проблема dual write и её решение · CDC (Debezium) как альтернатива polling · порядок обработки и повторная доставка · эволюция схемы сообщений: версионирование, обратная совместимость, schema registry.
 
 **10.6 Распределённые транзакции и блокировки.** 2PC и почему его избегают · Saga: choreography против orchestration, компенсирующие действия · eventual consistency и как её объяснить продукту · distributed locks: `SET NX PX`, Redlock и его критика, fencing tokens · leader election.
 
@@ -39,6 +39,7 @@
 - **«Публиковать событие после коммита в базу надёжно».** Это dual write: падение между двумя операциями теряет событие. Нужен Transactional Outbox или CDC. *(10.5)*
 - **«Kafka гарантирует порядок сообщений в топике».** Только внутри одной партиции. *(10.4)*
 - **«Redlock даёт корректную блокировку для защиты данных».** Из-за пауз GC, сетевых задержек и сдвига часов два клиента могут одновременно считать себя владельцами. Для корректности нужны fencing tokens. *(10.6)*
+- **«`@Cron` в NestJS выполнит задачу один раз».** Планировщик работает внутри процесса: при N репликах задача выполнится N раз. Нужны распределённый планировщик (repeatable jobs в очереди), блокировка или leader election. *(10.2, 10.6)*
 - **«DLQ решает проблему ошибок обработки».** DLQ только откладывает проблему. Нужны мониторинг, разбор причин и replay. *(10.5)*
 
 ## Что должно быть получено

@@ -25,19 +25,19 @@
 
 ## Состав уроков
 
-**12.1 Принципы проектирования.** SOLID с примерами нарушений в NestJS-коде · coupling и cohesion · DRY, KISS, YAGNI и их конфликты · composition over inheritance · Law of Demeter.
+**12.1 Принципы проектирования.** SOLID с примерами нарушений в NestJS-коде · coupling и cohesion · DRY, KISS, YAGNI и их конфликты · composition over inheritance, интерфейс против абстрактного класса · Law of Demeter · паттерны GoF, которые реально встречаются в backend и NestJS: Strategy, Factory, Adapter, Facade, Decorator, Proxy, Observer, Chain of Responsibility (pipeline middleware) · Singleton и почему его роль берёт на себя DI-контейнер.
 
 **12.2 Clean и Hexagonal Architecture.** Dependency rule · ports и adapters · слои: domain, application, infrastructure, presentation · реализация в NestJS: модули, токены для портов · когда это избыточно и как выглядит прагматичная версия.
 
-**12.3 DDD, CQRS, Event Sourcing.** Стратегический DDD: ubiquitous language, bounded contexts, context map · тактический DDD: entities, value objects, aggregates и их границы, domain events, repositories · CQRS: от разделения моделей до разных хранилищ · Event Sourcing: когда оправдан и чего стоит.
+**12.3 DDD, CQRS, Event Sourcing.** Стратегический DDD: ubiquitous language, bounded contexts, context map, anti-corruption layer · тактический DDD: entities, value objects, aggregates и их границы, domain events, repositories · CQRS: от разделения моделей до разных хранилищ · Event Sourcing: когда оправдан и чего стоит.
 
-**12.4 Modular monolith и microservices.** Модульный монолит как разумный старт · критерии декомпозиции · синхронное против асинхронного взаимодействия · API gateway, BFF, service mesh · владение данными и database per service · распределённый монолит как антипаттерн.
+**12.4 Modular monolith и microservices.** Модульный монолит как разумный старт · критерии декомпозиции · синхронное против асинхронного взаимодействия · event-driven: event notification против event-carried state transfer · API gateway, BFF, service mesh · serverless (FaaS): cold start, соединения с базой, лимиты времени выполнения, когда он уместен · владение данными и database per service · распределённый монолит как антипаттерн.
 
 **12.5 CAP, PACELC, модели согласованности.** CAP-теорема и частые заблуждения о ней · PACELC · linearizability, sequential, causal, eventual consistency · read-your-writes, monotonic reads · кворумы (R + W > N) и их ограничения.
 
-**12.6 Масштабирование данных.** Leader-follower, multi-leader, leaderless репликация · шардирование: по хешу, по диапазону, consistent hashing · ребалансировка · горячие ключи и партиции · генерация глобальных ID (UUIDv7, Snowflake) · cross-shard запросы.
+**12.6 Масштабирование данных.** Выбор хранилища под нагрузку: реляционное, документное (MongoDB), key-value, wide-column, колоночное OLAP (ClickHouse), поисковый движок; когда достаточно JSONB и расширений PostgreSQL · leader-follower, multi-leader, leaderless репликация · шардирование: по хешу, по диапазону, consistent hashing · ребалансировка · горячие ключи и партиции · генерация глобальных ID (UUIDv7, Snowflake) · cross-shard запросы.
 
-**12.7 Конкурентность и отказоустойчивость.** Race conditions, lost update, double spend · сквозная идемпотентность от клиента до базы · физические и логические часы: Lamport, vector clocks, HLC · fault tolerance: retries, timeouts, деградация функциональности · технический долг: как измерить и как продать его погашение.
+**12.7 Конкурентность и отказоустойчивость.** Race conditions, lost update, double spend · сквозная идемпотентность от клиента до базы · физические и логические часы: Lamport, vector clocks, HLC · fault tolerance: retries, timeouts, деградация функциональности · disaster recovery: multi-AZ и multi-region, целевые RPO и RTO системы · технический долг: как измерить и как продать его погашение · фиксация решений: ADR.
 
 **12.8 System design интервью.** Структура сессии: требования (функциональные и нефункциональные), оценка нагрузки (back-of-the-envelope), API, модель данных, high-level design, deep dives, узкие места · как вести trade-off диалог · теоретический разбор 2–3 кейсов: URL shortener, система уведомлений, платёжный поток.
 

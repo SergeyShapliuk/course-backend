@@ -28,13 +28,13 @@
 
 **7.3 Scopes.** DEFAULT, REQUEST, TRANSIENT · всплытие scope вверх по цепочке зависимостей · цена request scope для производительности · durable providers и multi-tenancy · альтернатива: request context через AsyncLocalStorage (`nestjs-cls` и аналоги).
 
-**7.4 Request lifecycle.** Полный порядок: middleware → guards → interceptors (до) → pipes → handler → interceptors (после) → exception filters · порядок global, controller и method уровней · до- и после-части interceptor вокруг `next.handle()` · на каком этапе возникло исключение и какой filter его поймает · где какой enhancer уместен · отличия Express и Fastify (middleware, request/response объекты).
+**7.4 Request lifecycle.** Полный порядок: middleware → guards → interceptors (до) → pipes → handler → interceptors (после) → exception filters · порядок global, controller и method уровней · до- и после-части interceptor вокруг `next.handle()` · на каком этапе возникло исключение и какой filter его поймает · где какой enhancer уместен · модель middleware Express, на которой стоит HTTP-слой Nest: `next()`, `next(err)`, error-middleware с четырьмя аргументами, асинхронные ошибки в Express 4 и 5 · отличия Express и Fastify (middleware, request/response объекты).
 
 **7.5 Enhancers и metadata.** Guards и `ExecutionContext` (HTTP, RPC, WebSocket) · interceptors: трансформация ответа, таймауты, кеш · pipes: валидация и трансформация, `ValidationPipe` · exception filters и стратегия ошибок: доменные исключения отдельно от HTTP, преобразование в единый формат ответа (Problem Details) на границе · `Reflector`, `SetMetadata`, `Reflector.createDecorator`, `applyDecorators`, кастомные param decorators.
 
 **7.6 Lifecycle, циклические зависимости, платформы.** `onModuleInit`, `onApplicationBootstrap`, `onModuleDestroy`, `beforeApplicationShutdown`, `onApplicationShutdown` · `enableShutdownHooks` · циклические зависимости модулей и провайдеров, `forwardRef`, `ModuleRef`, почему цикл — симптом проблемы дизайна · lazy-loading модулей · Express против Fastify adapter.
 
-**7.7 RxJS, microservices, CQRS.** Observable в interceptors и почему Nest выбрал RxJS · операторы, которые реально нужны (`map`, `tap`, `catchError`, `timeout`) · microservices: transporters, message и event patterns · модуль CQRS: commands, queries, events, sagas · обзор `Test.createTestingModule`.
+**7.7 RxJS, microservices, CQRS.** Observable в interceptors и почему Nest выбрал RxJS · операторы, которые реально нужны (`map`, `tap`, `catchError`, `timeout`) · hot и cold Observable · microservices: transporters, message и event patterns · WebSocket gateways · модуль CQRS: commands, queries, events, sagas · обзор `Test.createTestingModule`.
 
 ## Заблуждения, которые нужно развенчать
 

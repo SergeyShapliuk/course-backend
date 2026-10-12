@@ -20,15 +20,15 @@
 
 ## Состав уроков
 
-**2.1 Основы системы типов.** Структурная типизация против номинальной, branded types · `any` / `unknown` / `never` · literal types и widening · union и intersection · `type` против `interface`, declaration merging · excess property checks.
+**2.1 Основы системы типов.** Структурная типизация против номинальной, branded types · `any` / `unknown` / `never` · literal types и widening · union и intersection · `type` против `interface`, declaration merging · excess property checks · `enum`, `const enum` и union литералов через `as const`: что из них остаётся в рантайме.
 
 **2.2 Narrowing и control flow analysis.** `typeof`, `instanceof`, `in`, равенство · пользовательские type guards и assertion functions · discriminated unions и exhaustiveness через `never` · `satisfies` против аннотации · где CFA сбрасывает сужение (колбэки, мутации, асинхронность).
 
-**2.3 Generics.** Constraints (`extends`) · вывод типов из аргументов · defaults · `const` type parameters (TS 5.0+) · `NoInfer` (TS 5.4+) · типичные generic-паттерны: репозиторий, result type, типизированный event emitter · когда generic лишний.
+**2.3 Generics.** Constraints (`extends`) · вывод типов из аргументов · defaults · `const` type parameters (TS 5.0+) · `NoInfer` (TS 5.4+) · перегрузки функций и когда их заменяет generic или union · типичные generic-паттерны: репозиторий, result type, типизированный event emitter · когда generic лишний.
 
-**2.4 Conditional, mapped и template literal types.** Conditional types и distributivity над union, `infer` · mapped types, модификаторы `readonly` / `?`, key remapping через `as` · template literal types · как устроены `Partial`, `Pick`, `Omit`, `ReturnType`, `Awaited` · цена сложных типов для компилятора.
+**2.4 Conditional, mapped и template literal types.** Операторы `keyof`, `typeof` и indexed access types · conditional types и distributivity над union, `infer` · mapped types, модификаторы `readonly` / `?`, key remapping через `as` · template literal types · как устроены `Partial`, `Pick`, `Omit`, `ReturnType`, `Awaited` · цена сложных типов для компилятора.
 
-**2.5 Variance, type erasure, decorators, tsconfig.** Ковариантность и контравариантность, `strictFunctionTypes` и bivariance методов, аннотации `in` / `out` · где TypeScript намеренно unsound · type erasure и runtime-валидация на границах (class-validator, zod) · legacy decorators (`experimentalDecorators`) против стандартных TC39 decorators (TS 5.0+), `emitDecoratorMetadata` и почему NestJS на нём держится · ключевые опции tsconfig: `strict`, `module` / `moduleResolution` (`node16`, `nodenext`, `bundler`), `isolatedModules`, `verbatimModuleSyntax`.
+**2.5 Variance, type erasure, decorators, tsconfig.** Ковариантность и контравариантность, `strictFunctionTypes` и bivariance методов, аннотации `in` / `out` · где TypeScript намеренно unsound · type erasure и runtime-валидация на границах (class-validator, zod) · классы: `private` / `protected` против `#private`, `abstract`, parameter properties и что из этого видно в рантайме · `.d.ts`, `@types`, module augmentation (расширение `Request` в Express) · запуск TypeScript: `tsc`, транспиляторы без проверки типов (swc, esbuild), type stripping в Node.js и `erasableSyntaxOnly` (версии сверить) · legacy decorators (`experimentalDecorators`) против стандартных TC39 decorators (TS 5.0+), `emitDecoratorMetadata` и почему NestJS на нём держится · ключевые опции tsconfig: `strict`, `module` / `moduleResolution` (`node16`, `nodenext`, `bundler`), `isolatedModules`, `verbatimModuleSyntax`.
 
 ## Заблуждения, которые нужно развенчать
 
@@ -37,6 +37,7 @@
 - **«`as` — безопасное приведение типа».** Type assertion ничего не проверяет и не преобразует, это указание компилятору поверить на слово. *(2.2)*
 - **«Система типов TypeScript sound».** Она намеренно unsound: bivariance параметров методов, `any`, индексный доступ без `noUncheckedIndexedAccess`, assertions. *(2.5)*
 - **«`interface` и `type` полностью взаимозаменяемы».** Declaration merging есть только у `interface`; union, conditional и mapped types выражаются только через `type`; иерархия через `extends` проверяется компилятором эффективнее, чем пересечения. *(2.1)*
+- **«`enum` исчезает при компиляции, как и остальные типы».** Обычный `enum` компилируется в объект, который существует в рантайме. Поэтому он не проходит через type stripping в Node.js без трансформации кода (сверить по документации актуальной версии). Union литералов исчезает полностью. *(2.1, 2.5)*
 - **«NestJS умеет инжектить по интерфейсу».** Интерфейс стирается, и в `design:paramtypes` попадает `Object`. Нужен токен: класс, строка, symbol. *(2.5, 7.1)*
 
 ## Что должно быть получено
