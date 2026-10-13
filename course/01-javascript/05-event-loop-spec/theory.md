@@ -320,7 +320,7 @@ async recalc() {
 
 ### 7.2 Агенты, потоки и блокировка
 
-Агент — это стек execution context, Agent Record и поток выполнения ([9.6 Agents](https://tc39.es/ecma262/#sec-agents)) `[spec]`. У каждого агента своя очередь jobs. В Node.js главный поток — один агент, каждый Worker Thread — отдельный агент со своим циклом событий. В браузере — окно и каждый Web Worker.
+Агент — это стек execution context, Agent Record и поток выполнения ([9.6 Agents](https://tc39.es/ecma262/#sec-agents)) `[spec]`. Jobs ставятся в конкретный агент ([9.5](https://tc39.es/ecma262/#sec-jobs)); как хост их хранит, спецификация с ES2020 не описывает (7.1). В Node.js главный поток — один агент, каждый Worker Thread — отдельный агент со своим циклом событий. В браузере — окно и каждый Web Worker.
 
 Поле `[[CanBlock]]` говорит, может ли агент блокироваться синхронно (`Atomics.wait`). Стандарт HTML разрешает это только воркерам: «Only shared and dedicated worker agents allow the use of JavaScript Atomics APIs to potentially block» ([HTML: agents](https://html.spec.whatwg.org/multipage/webappapis.html#integration-with-the-javascript-agent-formalism)) `[runtime]`. В Node.js главный поток может блокироваться: `Atomics.wait(...)` на нём возвращает `'timed-out'`, а не бросает (проверено запуском на v22.22.2). Это ещё одно различие хостов.
 
