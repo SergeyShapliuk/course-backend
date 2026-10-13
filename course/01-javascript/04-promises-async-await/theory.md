@@ -387,7 +387,7 @@ main();
 1. Вызывающий создаёт `AbortController` и передаёт `controller.signal` в операцию.
 2. Операция подписывается на событие `abort` или проверяет `signal.aborted` / `signal.throwIfAborted()` в своих точках и **сама** прекращает работу.
 3. `controller.abort(reason)` переводит сигнал в состояние aborted, `signal.reason` — переданная причина или `DOMException` с именем `AbortError`.
-4. Встроенные API Node.js, которые принимают `signal` (`fetch`, `timers/promises`, `events.once`, `fs.readFile` и другие), отклоняют свой Promise с ошибкой `AbortError`.
+4. Встроенные API Node.js, которые принимают `signal`, отклоняют свой Promise, но по-разному. `timers/promises`, `events.once`, `fs.readFile` бросают свою ошибку `AbortError` (код `ABORT_ERR`) и кладут причину в `cause`. `fetch` по стандарту Fetch отклоняется **самой причиной** `signal.reason`: `DOMException` `TimeoutError` для `AbortSignal.timeout` или ошибкой, переданной в `abort(err)` (проверено запуском на v22.22.2, подробнее — [7.6](#76-причина-отмены-aborterror-и-timeouterror)).
 
 **Пример.**
 
@@ -608,7 +608,7 @@ function controllerThen() { return serviceGetThen().then((x) => x); }
 
 ### 7.6 Причина отмены: `AbortError` и `TimeoutError`
 
-`controller.abort()` без аргумента записывает в `signal.reason` `DOMException` с именем `AbortError`. `AbortSignal.timeout(ms)` — `DOMException` с именем `TimeoutError`. Встроенные API Node.js по-разному передают причину: `timers/promises` отклоняет своей ошибкой `AbortError` (код `ABORT_ERR`) и кладёт причину в `cause` (2.8, проверено запуском) `[runtime]`. Поэтому код, который должен отличить «клиент ушёл» от «истёк дедлайн», проверяет `signal.reason` или `err.cause`, а не только `err.name`.
+`controller.abort()` без аргумента записывает в `signal.reason` `DOMException` с именем `AbortError`. `AbortSignal.timeout(ms)` — `DOMException` с именем `TimeoutError`. Встроенные API Node.js по-разному передают причину: `timers/promises`, `events.once` и `fs.readFile` отклоняют своей ошибкой `AbortError` (код `ABORT_ERR`) и кладут причину в `cause` `[runtime]`, а `fetch` отклоняется самой причиной: «Abort the fetch() call with p, request, null, and requestObject's signal's abort reason» ([Fetch Standard](https://fetch.spec.whatwg.org/#abort-fetch)) `[spec]`. На v22.22.2 `fetch` с `AbortSignal.timeout(30)` отклонился `DOMException` с именем `TimeoutError`, а после `abort(new Error('client gone'))` — этой же ошибкой (2.8, проверено запуском). Поэтому код, который должен отличить «клиент ушёл» от «истёк дедлайн», проверяет `signal.reason` или `err.cause`, а не только `err.name`.
 
 ---
 
@@ -636,6 +636,10 @@ function controllerThen() { return serviceGetThen().then((x) => x); }
 - [Process: `'unhandledRejection'`, `'rejectionHandled'`](https://nodejs.org/docs/latest-v22.x/api/process.html#event-rejectionhandled)
 - [Globals: `AbortController`, `AbortSignal.timeout()`, `AbortSignal.any()`](https://nodejs.org/docs/latest-v22.x/api/globals.html#class-abortsignal)
 - [Util: `util.promisify()`](https://nodejs.org/docs/latest-v22.x/api/util.html#utilpromisifyoriginal)
+
+**WHATWG:**
+
+- [Fetch Standard: abort a `fetch()` call](https://fetch.spec.whatwg.org/#abort-fetch) — `fetch` отклоняется причиной сигнала (`signal.reason`), а не ошибкой `AbortError` с `cause`
 
 **V8:**
 

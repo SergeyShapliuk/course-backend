@@ -138,7 +138,7 @@ console.log(child.id, Object.hasOwn(child, 'id')); // 1 false
 
 **Как работает по шагам.**
 
-1. Получить прототип: значение `newTarget.prototype`. Если это не объект — взять `Object.prototype` текущего realm ([10.1.14 GetPrototypeFromConstructor](https://tc39.es/ecma262/#sec-getprototypefromconstructor)).
+1. Получить прототип: значение `newTarget.prototype`. Если это не объект — взять `Object.prototype` из realm **конструктора**, а не текущего кода ([10.1.14 GetPrototypeFromConstructor](https://tc39.es/ecma262/#sec-getprototypefromconstructor): «obtained from the realm of the ctor function rather than from the running execution context»). Разница видна только при нескольких realm (7.5): функция из `vm.createContext` с `F.prototype = null` создаёт объект с `Object.prototype` своего контекста (проверено запуском).
 2. Создать новый объект с этим `[[Prototype]]` ([10.1.13 OrdinaryCreateFromConstructor](https://tc39.es/ecma262/#sec-ordinarycreatefromconstructor)).
 3. Привязать его к `this` нового вызова. Для класса — инициализировать поля экземпляра (2.4).
 4. Выполнить тело.

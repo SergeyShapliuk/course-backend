@@ -178,7 +178,7 @@ function noCapture() {
 // retained collected function function
 ```
 
-В `sharedScope` функцию `useBig` никто не вернул, но она ссылается на `big`. Поэтому `big` попал в контекст scope, а `useSmall` держит тот же контекст. В `noCapture` на `big` не ссылается ни одна вложенная функция: он живёт на стеке и после возврата становится недостижим.
+В `sharedScope` функцию `useBig` никто не вернул, но она ссылается на `big`. Поэтому `big` попал в контекст scope, а `useSmall` держит тот же контекст. В `noCapture` на `big` не ссылается ни одна вложенная функция: **переменная** `big` живёт в кадре стека (сам объект, как и любой объект, лежит в куче), и после возврата на объект не остаётся ссылок — он недостижим.
 
 Почему проверка ждёт `setImmediate` перед сборкой: спецификация требует, чтобы объект, только что переданный в `new WeakRef` или прочитанный через `deref()`, оставался живым до конца текущего синхронного выполнения ([9.11 AddToKeptObjects](https://tc39.es/ecma262/#sec-addtokeptobjects), [9.10 ClearKeptObjects](https://tc39.es/ecma262/#sec-clear-kept-objects)). Без выхода из текущей задачи `deref()` вернул бы объект независимо от замыканий. Подробно о WeakRef — 1.6.
 
@@ -574,7 +574,7 @@ async function waitsOnUnreferenced() {
 **ECMAScript** (рабочий черновик ECMAScript 2027, tc39.es/ecma262):
 
 - [9.1 Environment Records](https://tc39.es/ecma262/#sec-environment-records) — «purely specification mechanisms»
-- [9.9.1 WeakRef Invariants](https://tc39.es/ecma262/#sec-weakref-invariants), [9.9.2 Liveness](https://tc39.es/ecma262/#sec-liveness)
+- [9.9.1 Objectives](https://tc39.es/ecma262/#sec-weakref-invariants) (раздел о целях обработки WeakRef и FinalizationRegistry), [9.9.2 Liveness](https://tc39.es/ecma262/#sec-liveness)
 - [9.10 ClearKeptObjects](https://tc39.es/ecma262/#sec-clear-kept-objects), [9.11 AddToKeptObjects](https://tc39.es/ecma262/#sec-addtokeptobjects)
 - [10.2 ECMAScript Function Objects](https://tc39.es/ecma262/#sec-ecmascript-function-objects), Table 26 — слот `[[Environment]]`
 - [10.2.3 OrdinaryFunctionCreate](https://tc39.es/ecma262/#sec-ordinaryfunctioncreate)
