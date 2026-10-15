@@ -286,7 +286,7 @@ class Controller {
 
 **Что делает `emitDecoratorMetadata`.** Для класса или члена с legacy decorator компилятор выводит вызов `__metadata("design:paramtypes", [...])` с **значениями** типов параметров конструктора. Значение берётся из аннотации: класс — сам класс, интерфейс и union — `Object`, класс из `import type` — `Function`, параметры типа стираются: для `Repository<User>` записывается `Repository` (урок 2.3). Подробно — 7.2.
 
-**Как это использует NestJS.** Контейнер читает `design:paramtypes` у класса провайдера и по каждому значению ищет провайдер с таким токеном. В `@nestjs/common` 12.1.3 ключ — константа `PARAMTYPES_METADATA = 'design:paramtypes'`, а `@Injectable()` — legacy decorator `(target) => …` (проверено по исходникам пакета). Поэтому NestJS требует `experimentalDecorators` и `emitDecoratorMetadata` и не может перейти на стандартные decorators: у них нет ни decorators параметров (`@Inject()`, `@Body()`), ни типов в metadata.
+**Как это использует NestJS.** Контейнер читает `design:paramtypes` у класса провайдера и по каждому значению ищет провайдер с таким токеном. В `@nestjs/common` 12.1.3 ключ — константа `PARAMTYPES_METADATA = 'design:paramtypes'`, а `@Injectable()` — legacy decorator `(target) => …` (проверено по исходникам пакета). Поэтому NestJS требует `experimentalDecorators` и `emitDecoratorMetadata`. Текущая модель DI опирается на две возможности legacy decorators, которых у стандартных нет: decorators параметров (`@Inject()`, `@Body()`) и типы в metadata. Переключить флаг компилятора недостаточно — переход потребовал бы изменить сами механизмы внедрения зависимостей и metadata во фреймворке.
 
 ```ts
 // tsconfig: {"experimentalDecorators": true, "emitDecoratorMetadata": true}

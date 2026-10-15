@@ -126,6 +126,26 @@ console.log(touch2(order).total);          // 100
 
 Если бы первый вариант компилировался, `touch(order).total` имел бы тип `number` и значение `undefined`.
 
+**Spread сохраняет остальные поля, но не тип перезаписанного.** `touch2` компилируется, потому что `{ ...row, updatedAt: new Date() }` совместим с `T`. Но вызывающий может передать подтип, у которого само `updatedAt` уже, чем `Date`, и функция нарушит его гарантию:
+
+```ts
+type Entity = { id: string; updatedAt: Date };
+function touch2<T extends Entity>(row: T): T { return { ...row, updatedAt: new Date() }; }
+function touch3<T extends Entity>(row: T): Omit<T, 'updatedAt'> & { updatedAt: Date } {
+  return { ...row, updatedAt: new Date() };
+}
+type UtcDate = Date & { readonly zone: 'UTC' };
+type AuditRow = { id: string; updatedAt: UtcDate; total: number };
+const row: AuditRow = { id: 'a1', updatedAt: Object.assign(new Date(0), { zone: 'UTC' as const }), total: 5 };
+console.log(touch2(row).updatedAt.zone);     // undefined — а по типу 'UTC'
+const r3 = touch3(row);
+r3.updatedAt.zone;                           // TS2339: Property 'zone' does not exist on type 'Date'.
+const back: AuditRow = r3;
+// TS2322: Type 'Omit<AuditRow, "updatedAt"> & { updatedAt: Date; }' is not assignable to type 'AuditRow'.
+```
+
+Если функция перезаписывает поле, честный тип результата описывает это явно (`touch3`), и компилятор ловит подтип с более узким полем. Другие варианты — сузить контракт (функция для `Entity`, а не для любого подтипа) или сохранять инвариант поля (создавать значение того же вида, что пришло).
+
 **Используйте сам параметр, а не constraint на массив.** «When possible, use the type parameter itself rather than constraining it»: у `first<T>(xs: T[])` результат `T`, а у `first<T extends any[]>(xs: T)` элемент вычисляется через constraint и получается `any` (проверено на 7.0.2). С `T extends unknown[]` получается `unknown`.
 
 **Constraint через другой параметр.** `function pick<T, K extends keyof T>(obj: T, key: K): T[K]` — второй параметр ограничен ключами первого. Операторы `keyof` и `T[K]` — урок 2.4.
