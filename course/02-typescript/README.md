@@ -12,11 +12,11 @@
 
 | # | Тема | Уровень | Ключевой вопрос урока | Текст |
 |---|---|---|---|---|
-| 2.1 | Основы системы типов | 🟢 | почему TypeScript структурный и что из этого следует | — |
-| 2.2 | Narrowing и control flow analysis | 🟢 | как компилятор сужает тип и где он перестаёт это делать | — |
-| 2.3 | Generics | 🟡 | как выразить связь между входом и выходом функции | — |
-| 2.4 | Conditional, mapped и template literal types | 🟡 | как вычислять типы из типов | — |
-| 2.5 | Variance, type erasure, decorators, tsconfig | 🔴 | где система типов unsound и что остаётся в рантайме | — |
+| 2.1 | Основы системы типов | 🟢 | почему TypeScript структурный и что из этого следует | [01-type-system-basics](./01-type-system-basics/) |
+| 2.2 | Narrowing и control flow analysis | 🟢 | как компилятор сужает тип и где он перестаёт это делать | [02-narrowing-control-flow](./02-narrowing-control-flow/) |
+| 2.3 | Generics | 🟡 | как выразить связь между входом и выходом функции | [03-generics](./03-generics/) |
+| 2.4 | Conditional, mapped и template literal types | 🟡 | как вычислять типы из типов | [04-conditional-mapped-template-types](./04-conditional-mapped-template-types/) |
+| 2.5 | Variance, type erasure, decorators, tsconfig | 🔴 | где система типов unsound и что остаётся в рантайме | [05-variance-erasure-decorators-tsconfig](./05-variance-erasure-decorators-tsconfig/) |
 
 ## Состав уроков
 
