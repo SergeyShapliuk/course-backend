@@ -12,13 +12,13 @@
 
 | # | Тема | Уровень | Ключевой вопрос урока | Текст |
 |---|---|---|---|---|
-| 3.1 | Архитектура Node.js и V8 | 🟡 | из чего состоит Node.js и как V8 делает JavaScript быстрым | — |
-| 3.2 | Event Loop в Node.js | 🟢 | в каком порядке выполняются колбэки и что блокирует цикл | — |
-| 3.3 | Thread Pool, Worker Threads, cluster | 🟡 | где в Node.js на самом деле есть потоки и когда их добавлять | — |
-| 3.4 | Streams и backpressure | 🟡 | как обработать 10 ГБ данных в 100 МБ памяти | — |
-| 3.5 | Память и GC | 🔴 | как устроена куча V8 и как найти утечку в production | — |
-| 3.6 | Модули: CommonJS и ESM | 🟡 | чем на самом деле различаются две системы модулей | — |
-| 3.7 | Жизненный цикл процесса | 🔴 | как процесс корректно стартует, падает и завершается | — |
+| 3.1 | Архитектура Node.js и V8 | 🟡 | из чего состоит Node.js и как V8 делает JavaScript быстрым | [01-nodejs-architecture-v8](./01-nodejs-architecture-v8/) |
+| 3.2 | Event Loop в Node.js | 🟢 | в каком порядке выполняются колбэки и что блокирует цикл | [02-event-loop](./02-event-loop/) |
+| 3.3 | Thread Pool, Worker Threads, cluster | 🟡 | где в Node.js на самом деле есть потоки и когда их добавлять | [03-thread-pool-workers-cluster](./03-thread-pool-workers-cluster/) |
+| 3.4 | Streams и backpressure | 🟡 | как обработать 10 ГБ данных в 100 МБ памяти | [04-streams-backpressure](./04-streams-backpressure/) |
+| 3.5 | Память и GC | 🔴 | как устроена куча V8 и как найти утечку в production | [05-memory-gc](./05-memory-gc/) |
+| 3.6 | Модули: CommonJS и ESM | 🟡 | чем на самом деле различаются две системы модулей | [06-modules-cjs-esm](./06-modules-cjs-esm/) |
+| 3.7 | Жизненный цикл процесса | 🔴 | как процесс корректно стартует, падает и завершается | [07-process-lifecycle](./07-process-lifecycle/) |
 
 ## Состав уроков
 
