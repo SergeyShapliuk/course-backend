@@ -2,7 +2,7 @@
 
 > 🔴 Senior. Метки источника: `[spec]` — гарантия ECMAScript, `[runtime]` — поведение V8 или Node.js конкретной версии, `[lib]` — поведение библиотеки, `[arch]` — рекомендация. Базовая среда — **Node.js v22.22.2** (V8 12.4), Windows 10 x64, 16 ГБ RAM. Поведение в контейнере проверено в Docker Desktop (Linux 6.18, **cgroup v2**, VM на 8 ГБ и 12 CPU) на официальных образах `node:18.18.0-slim`, `node:18.20.8-slim`, `node:20.2.0-slim`, `node:20.3.0-slim`, `node:22.22.2-slim` и `node:24.22.0-slim`. Размеры пространств кучи дополнительно сверены на v24.22.0 и v26.12.0. Время и память — одного запуска; повторы отличались не больше чем на 10 %.
 
-**Как читать.** Обязательная часть — разделы 1–6: из чего состоит память процесса, как устроена куча V8, как работают Scavenge и Mark-Sweep-Compact и что делает их в основном конкурентными, как Node.js выбирает лимит кучи и что меняется в контейнере, типичные утечки, как отличить утечку от нормального роста и доказать её heap snapshot. Раздел 7 — углубление: внешняя память и давление на GC, pointer compression, лимиты Worker, формат `--trace-gc`, коды завершения при нехватке памяти.
+**Как читать.** Обязательная часть — разделы 1–6: из чего состоит память процесса, как устроена куча V8, как работают Scavenge и Mark-Sweep-Compact и что делает их в основном конкурентными, как Node.js выбирает лимит кучи и что меняется в контейнере, типичные утечки, как отличить утечку от нормального роста и доказать её heap snapshot. Раздел 7 — углубление: внешняя память и давление на GC, pointer compression, лимиты Worker, формат `--trace-gc`, коды завершения при нехватке памяти, исходники расчёта размеров кучи.
 
 **Граница с соседними уроками.** Что удерживает замыкание, V8 Context и утечки через замыкания — [1.2](../../01-javascript/02-closures/). WeakMap, WeakRef, FinalizationRegistry — [1.6](../../01-javascript/06-iterators-weakrefs-numbers/). Smi и pointer compression — [3.1, 7.1](../01-nodejs-architecture-v8/theory.md#71-smi-heapnumber-и-pointer-compression). Buffer и потоковая обработка вместо больших буферов — [3.4](../04-streams-backpressure/). Утечки слушателей EventEmitter — 3.7. Лимиты памяти и CPU в Kubernetes — 11.3.
 
@@ -57,13 +57,11 @@
 
 **Что это.** Куча V8 разделена на пространства по поколениям и видам объектов. В основе — «generational hypothesis»: большинство объектов умирают молодыми ([V8: Trash talk](https://v8.dev/blog/trash-talk)) `[runtime]`.
 
-**Пространства V8 12.4** (`v8.getHeapSpaceStatistics()` на v22.22.2): `read_only_space`, `new_space`, `old_space`, `code_space`, `shared_space`, `trusted_space`, `new_large_object_space`, `large_object_space`, `code_large_object_space`, `shared_large_object_space`, `trusted_large_object_space`. В v24 и v26 их больше (добавлены `shared_trusted_*`); состав — деталь реализации движка.
-
-**Главные из них.**
+**Главные пространства.** Полный список зависит от версии V8 и виден в `v8.getHeapSpaceStatistics()` (7.6).
 
 - **New space** — молодое поколение из двух полупространств (semi-spaces). Все новые объекты сначала попадают сюда. Размер подстраивается под нагрузку в пределах максимума (2.5).
 - **Old space** — объекты, пережившие сборки в молодом поколении. Основная часть долгоживущих данных: кеши, соединения, модули.
-- **Large object space** — объекты больше `kMaxRegularHeapObjectSize`, равного половине страницы V8 (страница — 256 КиБ: `kPageSizeBits = 18` в `deps/v8/src/base/build_config.h`, `kMaxRegularHeapObjectSize = 1 << (kPageSizeBits - 1)` в `deps/v8/src/common/globals.h` v22.22.2 — значит 128 КиБ). Проверка: массив из чисел на 127 КиБ остался в обычном пространстве, на 129 КиБ — попал в large object space. Не копируются при сборке.
+- **Large object space** — объекты больше 128 КиБ (половина страницы V8 в v22.22.2, 7.6). Проверка: массив из чисел на 127 КиБ остался в обычном пространстве, на 129 КиБ — попал в large object space. Не копируются при сборке.
 - **Code space** — скомпилированный машинный код.
 
 **Как работает выделение.** Новый объект размещается в new space простым сдвигом указателя — это дёшево. Когда полупространство заполнено, запускается Scavenge (2.3).
@@ -122,7 +120,7 @@
 - Конкурентный режим тратит не меньше CPU — работа просто вынесена из основного потока. Документация V8 об инкрементальной маркировке: «this does not reduce the amount of time spent on the main thread (in fact, it usually increases it slightly), it just spreads it out over time».
 - V8 по умолчанию позволил куче вырасти до 1 ГиБ, прежде чем собирать её: это компромисс «больше памяти — реже и короче паузы». Лимит кучи на этой машине — 4 ГиБ (2.5).
 
-Строка `--trace-gc` показывает, сколько работы сделано до паузы. При куче около 1 ГиБ в другом прогоне: «Mark-Compact 1097.5 (1142.4) -> 388.1 (429.6) MB, … 659.74 / 0.00 ms (+ 583.6 ms in 0 steps since start of marking, … walltime since start of marking 1263 ms)» — маркировка началась за 1,26 с до паузы, и часть её выполнялась параллельно с JavaScript; при этом финальная пауза на гигабайтной куче всё равно составила 660 мс.
+Строка `--trace-gc` показывает, сколько работы сделано до паузы (разбор формата — 7.4): в другом прогоне при куче около 1 ГиБ маркировка началась за 1,26 с до паузы, и часть её выполнялась параллельно с JavaScript, но финальная пауза на гигабайтной куче всё равно составила 660 мс.
 
 **Что зависит от ситуации.** Паузы растут с размером живых данных и скоростью изменения ссылок. Когда куча близка к лимиту, V8 запускает полные сборки одну за другой, и каждая почти ничего не освобождает: в строке трассировки это «allocation failure; scavenge might not succeed» и паузы в сотни миллисекунд (2.5). Задержка цикла в эти моменты — заслуга GC, а не кода ([3.2, S12](../02-event-loop/interview.md#s12-p99-всех-эндпоинтов-периодически-растёт-до-полусекунды-cpu-в-среднем-12--как-найти-причину)).
 
@@ -134,18 +132,7 @@
 
 ### 2.5 Лимит кучи по умолчанию и контейнеры
 
-**Что это.** Если `--max-old-space-size` не задан, Node.js просит V8 рассчитать размеры кучи от доступной памяти. В `src/api/environment.cc` v22.22.2 (`SetIsolateCreateParamsForNode`) `[runtime]`:
-
-```cpp
-const uint64_t constrained_memory = uv_get_constrained_memory();
-const uint64_t total_memory = constrained_memory > 0 ?
-    std::min(uv_get_total_memory(), constrained_memory) :
-    uv_get_total_memory();
-// … «V8 defaults to 700MB or 1.4GB on 32 and 64 bit platforms respectively.
-//    This default is based on browser use-cases. Tell V8 to configure the
-//    heap based on the actual physical memory.»
-params->constraints.ConfigureDefaults(total_memory, 0);
-```
+**Что это.** Если `--max-old-space-size` не задан, Node.js передаёт V8 объём доступной памяти: меньшее из памяти машины и лимита cgroup, если libuv этот лимит видит (`uv_get_constrained_memory()`), — и V8 рассчитывает размеры кучи от него `[runtime]`. Фрагмент исходника — в 7.6.
 
 **Формула V8** (`Heap::HeapSizeFromPhysicalMemory` в `deps/v8/src/heap/heap.cc` v22.22.2, x64):
 
@@ -397,7 +384,7 @@ RequestContext   +5000 objects, +273 KB
 
 ## 7. Углубление для Strong Middle / Senior
 
-Обязательная часть урока — разделы 1–6. Здесь — внешняя память, pointer compression, Worker, формат трассировки и коды завершения.
+Обязательная часть урока — разделы 1–6. Здесь — внешняя память, pointer compression, Worker, формат трассировки, коды завершения и исходники расчёта размеров кучи.
 
 ### 7.1 Внешняя память и давление на GC
 
@@ -445,6 +432,25 @@ w.on('exit', (code) => console.log('worker exit code', code, '; main thread aliv
 - **137** = 128 + 9 (SIGKILL): процесс убит ядром или оркестратором; при `OOMKilled` — по лимиту памяти cgroup.
 - **134** = 128 + 6 (SIGABRT): V8 вызвал `abort()` после `FATAL ERROR` (нехватка кучи).
 - В эксперименте `docker run … node grow.js`, где node — PID 1 в контейнере, тот же `FATAL ERROR` дал код 139, а запуск через `sh -c` — 134. У PID 1 особая обработка сигналов в Linux; почему node не стоит запускать PID 1 без init-процесса (`--init`, tini) — тема 11.3. Для алертов надёжнее причина из `kubectl describe` (`OOMKilled`) и последние строки stderr (`FATAL ERROR`), чем код завершения.
+
+### 7.6 Откуда берутся размеры кучи: исходники
+
+**Как Node.js передаёт память V8.** `src/api/environment.cc` v22.22.2, функция `SetIsolateCreateParamsForNode`:
+
+```cpp
+const uint64_t constrained_memory = uv_get_constrained_memory();
+const uint64_t total_memory = constrained_memory > 0 ?
+    std::min(uv_get_total_memory(), constrained_memory) :
+    uv_get_total_memory();
+// … «V8 defaults to 700MB or 1.4GB on 32 and 64 bit platforms respectively.
+//    This default is based on browser use-cases. Tell V8 to configure the
+//    heap based on the actual physical memory.»
+params->constraints.ConfigureDefaults(total_memory, 0);
+```
+
+**Порог large object space.** `kMaxRegularHeapObjectSize` равен половине страницы V8: `kPageSizeBits = 18` (страница 256 КиБ) в `deps/v8/src/base/build_config.h` и `kMaxRegularHeapObjectSize = 1 << (kPageSizeBits - 1)` в `deps/v8/src/common/globals.h` v22.22.2 — 128 КиБ.
+
+**Пространства V8 12.4** (`v8.getHeapSpaceStatistics()` на v22.22.2): `read_only_space`, `new_space`, `old_space`, `code_space`, `shared_space`, `trusted_space`, `new_large_object_space`, `large_object_space`, `code_large_object_space`, `shared_large_object_space`, `trusted_large_object_space`. В v24 и v26 их больше (добавлены `shared_trusted_*`); состав — деталь реализации движка, на него не опираются.
 
 ---
 

@@ -30,7 +30,7 @@
 > - heap snapshot, `--heapsnapshot-near-heap-limit`, коды 137 и 134 при нехватке памяти — [3.5](../05-memory-gc/);
 > - ошибки в Promise и async/await как механизм языка — [1.4](../../01-javascript/04-promises-async-await/);
 > - таймауты HTTP-сервера (`headersTimeout`, `requestTimeout`, `keepAliveTimeout`) и балансировщика — 4.6;
-> - exception filters NestJS — 7.5; REQUEST scope и DI — 7.1, 7.3;
+> - exception filters NestJS — 7.5; REQUEST scope и DI — 7.1, 7.3; хуки жизненного цикла NestJS, `enableShutdownHooks` и их порядок подробно — 7.6 (здесь только место хуков в последовательности shutdown);
 > - остановка потребителей BullMQ, RabbitMQ, Kafka и идемпотентность — 10.2–10.5;
 > - PID 1, init-процесс, форма `CMD` в Dockerfile — 11.3; probes, `preStop`, снятие пода с балансировки — 11.5; профилирование под нагрузкой — 9.5.
 

@@ -30,6 +30,7 @@
 > - `module` / `moduleResolution`, `verbatimModuleSyntax`, `require(esm)` и `nodenext` в TypeScript — [2.5](../../02-typescript/05-variance-erasure-decorators-tsconfig/);
 > - compile cache и время старта — [3.1](../01-nodejs-architecture-v8/); кеш модулей в Worker Threads — [3.3](../03-thread-pool-workers-cluster/);
 > - циклические зависимости в DI NestJS и `forwardRef` — 7.6; провайдеры с асинхронной инициализацией — 7.2;
+> - инструментация ESM (OpenTelemetry, APM) через хуки загрузчика и `--import` — 11.4;
 > - supply chain, `npm audit`, install scripts, typosquatting — 8.6; моки модулей в тестах — 11.1; сборка Docker-образа с `npm ci` — 11.3.
 
 ## Связи

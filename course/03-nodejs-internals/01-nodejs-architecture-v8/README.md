@@ -2,7 +2,7 @@
 
 **Блок:** [03 — Node.js Internals](../)
 **Уровень:** 🟡 Углублённый (вопросы интервью — всех трёх уровней)
-**Prerequisites:** [1.5 Event Loop на уровне спецификации](../../01-javascript/05-event-loop-spec/) (jobs, хост, микрозадачи), [1.3 Прототипы и классы](../../01-javascript/03-prototypes-classes/) (объекты, поля классов), [2.5 Type erasure](../../02-typescript/05-variance-erasure-decorators-tsconfig/) (типы не существуют в рантайме)
+**Prerequisites:** [1.5 Event Loop на уровне спецификации](../../01-javascript/05-event-loop-spec/) (jobs, хост, микрозадачи), [1.3 Прототипы и классы](../../01-javascript/03-prototypes-classes/) (объекты, поля классов), [2.5 Type erasure](../../02-typescript/05-variance-erasure-decorators-tsconfig/) (типы не существуют в рантайме), [1.6 Числа](../../01-javascript/06-iterators-weakrefs-numbers/) (приведение типов, числа)
 **Следующий урок:** [3.2 Event Loop в Node.js](../02-event-loop/)
 
 ## Цель
